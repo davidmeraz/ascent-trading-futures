@@ -12,6 +12,8 @@ Before we talk about charts or money, you need to understand one thing: **The fu
 
 ## The Farmer and The Baker
 
+![Corn Field and Agriculture](https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1600&q=80)
+
 Imagine it's 1850. You are a **corn farmer**. You spend all year planting and watering.
 *   **The Problem:** If everyone has a great harvest, the price of corn crashes to zero, and you go bankrupt.
 *   **The Risk:** You don't know what the price will be when you harvest.
@@ -21,6 +23,8 @@ Now imagine a **bread factory owner**.
 *   **The Risk:** You don't know what your costs will be next month.
 
 ## The Solution: A Handshake to the Future
+
+![Business Handshake Deal](https://images.unsplash.com/photo-1574607383476-f517f260d30b?auto=format&fit=crop&w=1600&q=80)
 
 The farmer and the factory owner meet in a room (The Exchange). they make a deal:
 > *"I promise to sell you 5000 bushels of corn on December 1st for $4.00, no matter what the market price is that day."*
@@ -36,6 +40,8 @@ Today, airlines buy oil futures to lock in fuel prices. Starbucks buys coffee fu
 But sometimes, there isn't a Baker for every Farmer properly aligned. **That's where WE come in.**
 
 We are **Speculators**.
+
+![Trading Screens](https://images.unsplash.com/photo-1518186285589-2f7649de83e0?auto=format&fit=crop&w=1600&q=80)
 We take the risk that the big companies don't want. We provide **Liquidity**. When an airline needs to sell risk *right now*, we take the other side of the trade.
 
 > [!TIP]
@@ -86,6 +92,8 @@ The answer is **NO**, provided you understand the two types of contracts.
 
 ## 1. The Real Contract (Physical Delivery)
 
+![Physical Commodity Warehouse](https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1600&q=80)
+
 These contracts are for the **Commercial Hedgers** (The Baker, The Appliance Factory, The Airline).
 
 *   **Who uses them?** Companies that actually need the raw material.
@@ -94,6 +102,8 @@ These contracts are for the **Commercial Hedgers** (The Baker, The Appliance Fac
 
 ## 2. The Digital Contract (Cash Settled / Offsetting)
 
+![Digital Trading Execution](https://images.unsplash.com/photo-1642388691919-6169002eaf49?auto=format&fit=crop&w=1600&q=80)
+
 This is what **WE** trade. We are trading the *price opportunity*, not the physical item.
 
 To avoid delivery, we do something called **Offsetting**.
@@ -101,6 +111,9 @@ To avoid delivery, we do something called **Offsetting**.
 *   **The Math:** If you Bought 1 contract (+1), you simply Sell 1 contract (-1). Your net position is 0.
 
 ### Cash Settlement
+
+![Financial Index Data](https://images.unsplash.com/photo-1611974765270-ca12586343bb?auto=format&fit=crop&w=1600&q=80)
+
 Some markets, like the **S&P 500 E-mini (ES)**, are *Cash Settled*.
 *   You can't deliver 500 stocks to someone's house.
 *   At expiration, if you are still holding, the exchange just debits/credits your account based on the final price. No trucks involved.

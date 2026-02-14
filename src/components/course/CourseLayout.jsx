@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, Outlet, useParams, useLocation, useNavigate } from 'react-router-dom';
-import { Book, Circle, Menu, X, ArrowLeft, Lock, CheckCircle, TrendingUp } from 'lucide-react';
+import { Book, Circle, Menu, X, ArrowLeft, Lock, CheckCircle, TrendingUp, Power } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { COURSE_CONTENT } from '../../data/courseData';
 
@@ -10,6 +10,12 @@ export default function CourseLayout() {
     const location = useLocation();
     const navigate = useNavigate();
     const [completedLessons, setCompletedLessons] = useState([]);
+    const [hasStarted, setHasStarted] = useState(() => localStorage.getItem('course_started') === 'true');
+
+    // Hold to start state
+    const [startProgress, setStartProgress] = useState(0);
+    const holdInterval = useRef(null);
+    const startTime = useRef(null);
 
     // Protect route - Check if purchased
     useEffect(() => {
@@ -73,6 +79,123 @@ export default function CourseLayout() {
             }
         }
     }
+
+    const startHold = () => {
+        startTime.current = Date.now();
+        clearInterval(holdInterval.current);
+
+        holdInterval.current = setInterval(() => {
+            const elapsedTime = Date.now() - startTime.current;
+            const newProgress = Math.min((elapsedTime / 1500) * 100, 100); // 1.5 seconds to fill
+            setStartProgress(newProgress);
+
+            if (newProgress >= 100) {
+                clearInterval(holdInterval.current);
+                handleStart();
+            }
+        }, 16);
+    };
+
+    const endHold = () => {
+        clearInterval(holdInterval.current);
+        setStartProgress(0);
+    };
+
+    const handleStart = () => {
+        localStorage.setItem('course_started', 'true');
+        setHasStarted(true);
+    };
+
+    if (!hasStarted && !lessonId) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-[#020617] text-white relative overflow-hidden">
+                {/* Background Effects */}
+                <div className="absolute inset-0 z-0">
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+                    <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-[#020617] via-transparent to-[#020617]"></div>
+
+                    {/* Floating Candlesticks Simulation */}
+                    <motion.div
+                        animate={{ y: [0, -20, 0], opacity: [0.3, 0.6, 0.3] }}
+                        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                        className="absolute top-1/3 left-1/4 w-2 h-16 bg-emerald-500/20 blur-[1px]"
+                    />
+                    <motion.div
+                        animate={{ y: [0, 30, 0], opacity: [0.2, 0.5, 0.2] }}
+                        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                        className="absolute bottom-1/3 right-1/4 w-2 h-24 bg-red-500/20 blur-[1px]"
+                    />
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: [0.1, 0.3, 0.1] }}
+                        transition={{ duration: 4, repeat: Infinity }}
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[100px]"
+                    />
+                </div>
+
+                <div className="text-center z-10 p-12 bg-[#0B0F1C]/80 backdrop-blur-xl border border-white/5 rounded-3xl shadow-2xl relative overflow-hidden">
+                    {/* Decorative Top Border */}
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent"></div>
+
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">
+                            Trading Environment
+                        </h1>
+                        <p className="text-slate-400 text-lg mb-12 max-w-md mx-auto">
+                            System secured. Initialize protocol to access market data.
+                        </p>
+
+                        {/* Hold to Initialize Interaction */}
+                        <div className="flex justify-center py-4">
+                            <div
+                                className="relative w-32 h-32 cursor-pointer select-none group"
+                                onMouseDown={startHold}
+                                onMouseUp={endHold}
+                                onMouseLeave={endHold}
+                                onTouchStart={startHold}
+                                onTouchEnd={endHold}
+                            >
+                                {/* Static Outer Rings with Glow */}
+                                <div className="absolute inset-0 rounded-full border border-slate-700/50"></div>
+                                <div className="absolute inset-2 rounded-full border border-slate-700/30 border-dashed animate-[spin_10s_linear_infinite]"></div>
+
+                                {/* Dynamic Progress Ring */}
+                                <svg className="absolute inset-0 w-full h-full transform -rotate-90 pointer-events-none">
+                                    <circle
+                                        cx="64"
+                                        cy="64"
+                                        r="58"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                        fill="transparent"
+                                        className="text-emerald-500 transition-all duration-75 ease-linear drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                                        strokeDasharray={2 * Math.PI * 58}
+                                        strokeDashoffset={2 * Math.PI * 58 - (startProgress / 100) * (2 * Math.PI * 58)}
+                                        strokeLinecap="round"
+                                    />
+                                </svg>
+
+                                {/* Center Power Icon */}
+                                <div className="absolute inset-6 rounded-full bg-slate-800/80 border border-white/10 flex items-center justify-center group-active:scale-95 transition-transform shadow-inner shadow-black/50">
+                                    <Power className={`w-8 h-8 transition-colors duration-300 ${startProgress > 0 ? 'text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.8)]' : 'text-slate-500 group-hover:text-slate-300'}`} />
+                                </div>
+
+                                {/* Helper Text below */}
+                                <div className="absolute -bottom-12 w-[200px] -left-[36px] text-center text-xs font-bold tracking-widest text-slate-500 uppercase">
+                                    Hold to Initialize
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            </div>
+        );
+    }
+
 
     return (
         <div className="flex h-screen bg-[#020617] text-white overflow-hidden font-sans">
@@ -155,8 +278,8 @@ export default function CourseLayout() {
 
                                     if (locked) {
                                         return (
-                                            <div key={lesson.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-600 cursor-not-allowed opacity-50">
-                                                <Lock size={16} />
+                                            <div key={lesson.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-500 cursor-not-allowed opacity-75">
+                                                <Lock size={16} className="text-red-500" />
                                                 {lesson.title}
                                             </div>
                                         );
@@ -282,15 +405,22 @@ export default function CourseLayout() {
                                                     className={`flex items-center justify-between p-4 rounded-lg border transition-all ${isLessonCompleted(lesson.id)
                                                         ? 'bg-emerald-500/5 border-emerald-500/20 text-slate-300'
                                                         : isLessonLocked(lesson.id)
-                                                            ? 'bg-slate-800/50 border-white/5 text-slate-600 cursor-not-allowed'
+                                                            ? 'bg-red-500/5 border-red-500/10 text-slate-500 cursor-not-allowed pointer-events-none'
                                                             : 'bg-slate-800 border-white/10 text-white hover:border-emerald-500/50 hover:bg-slate-800/80'
                                                         }`}
                                                 >
                                                     <span className="flex items-center gap-3">
-                                                        {isLessonCompleted(lesson.id) ? <CheckCircle size={18} className="text-emerald-500" /> : isLessonLocked(lesson.id) ? <Lock size={18} /> : <Circle size={18} className="text-slate-400" />}
+                                                        {isLessonCompleted(lesson.id) ? (
+                                                            <CheckCircle size={18} className="text-emerald-500" />
+                                                        ) : isLessonLocked(lesson.id) ? (
+                                                            <Lock size={18} className="text-red-500" />
+                                                        ) : (
+                                                            <Circle size={18} className="text-slate-400" />
+                                                        )}
                                                         {lesson.title}
                                                     </span>
                                                     {isLessonCompleted(lesson.id) && <span className="text-xs text-emerald-500 font-bold px-2 py-1 bg-emerald-500/10 rounded">COMPLETED</span>}
+                                                    {isLessonLocked(lesson.id) && <span className="text-xs text-red-500 font-bold px-2 py-1 bg-red-500/10 rounded">LOCKED</span>}
                                                 </Link>
                                             ))}
                                         </div>

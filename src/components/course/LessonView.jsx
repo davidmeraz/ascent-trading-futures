@@ -55,9 +55,16 @@ export default function LessonView() {
         }
     }, [lessonId]);
 
+    // Check lock status
+    const stored = localStorage.getItem('completed_lessons');
+    const completed = stored ? JSON.parse(stored) : [];
+    const isLocked = currentIndex > 0 && !completed.includes(allLessons[currentIndex - 1].id);
+
     if (!activeLesson) {
         return <div className="text-center text-slate-400 mt-20">Lesson not found. Select one from the sidebar.</div>;
     }
+
+
 
     const handleQuizPass = () => {
         setQuizPassed(true);
@@ -92,8 +99,18 @@ export default function LessonView() {
                 {props.children}
             </div>
         ),
-        // Custom handling for Pro Tips and Warnings if we had a proper parser, 
-        // for now we standard blockquotes or just text styling.
+        img: ({ node, ...props }) => (
+            <div className="my-10">
+                <img
+                    {...props}
+                    className="rounded-2xl border border-white/10 shadow-2xl shadow-emerald-900/20 w-full object-cover max-h-[500px]"
+                    loading="lazy"
+                />
+                {props.alt && (
+                    <p className="text-center text-slate-500 text-sm mt-3 italic">{props.alt}</p>
+                )}
+            </div>
+        ),
     };
 
     return (
