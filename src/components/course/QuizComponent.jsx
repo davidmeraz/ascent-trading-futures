@@ -1,26 +1,34 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Clock, Lock, ArrowRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircle, Clock, Lock, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-export default function QuizComponent({ questions, onPass, onFail }) {
+export default function QuizComponent({ lessonId, questions, onPass, onFail }) {
     const [answers, setAnswers] = useState({});
     const [submitted, setSubmitted] = useState(false);
     const [passed, setPassed] = useState(false);
     const [lockoutTime, setLockoutTime] = useState(null);
     const [timeLeft, setTimeLeft] = useState(0);
 
+    // Per-lesson lockout key
+    const lockoutKey = `quiz_lockout_${lessonId}`;
+
     // Initial check for existing lockout
     useEffect(() => {
-        const storedLockout = localStorage.getItem('quiz_lockout');
+        const storedLockout = localStorage.getItem(lockoutKey);
         if (storedLockout) {
             const expiry = parseInt(storedLockout, 10);
             if (Date.now() < expiry) {
                 setLockoutTime(expiry);
             } else {
-                localStorage.removeItem('quiz_lockout');
+                localStorage.removeItem(lockoutKey);
             }
         }
-    }, []);
+
+        // Reset state when lesson changes
+        setAnswers({});
+        setSubmitted(false);
+        setPassed(false);
+    }, [lessonId, lockoutKey]);
 
     // Timer logic
     useEffect(() => {
@@ -31,8 +39,8 @@ export default function QuizComponent({ questions, onPass, onFail }) {
             if (remaining <= 0) {
                 setLockoutTime(null);
                 setTimeLeft(0);
-                localStorage.removeItem('quiz_lockout');
-                setSubmitted(false); // Reset quiz state
+                localStorage.removeItem(lockoutKey);
+                setSubmitted(false);
                 setAnswers({});
             } else {
                 setTimeLeft(remaining);
@@ -40,7 +48,7 @@ export default function QuizComponent({ questions, onPass, onFail }) {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [lockoutTime]);
+    }, [lockoutTime, lockoutKey]);
 
     const handleSelect = (qIndex, optionIndex) => {
         if (submitted || lockoutTime) return;
@@ -67,10 +75,10 @@ export default function QuizComponent({ questions, onPass, onFail }) {
             onPass();
         } else {
             setPassed(false);
-            // Lockout logic: 5 minutes from now
+            // Per-lesson lockout: 5 minutes from now
             const lockUntil = Date.now() + (5 * 60 * 1000);
             setLockoutTime(lockUntil);
-            localStorage.setItem('quiz_lockout', lockUntil.toString());
+            localStorage.setItem(lockoutKey, lockUntil.toString());
             onFail();
         }
     };
@@ -121,8 +129,8 @@ export default function QuizComponent({ questions, onPass, onFail }) {
                                         key={oIndex}
                                         onClick={() => handleSelect(qIndex, oIndex)}
                                         className={`w-full text-left p-4 rounded-lg transition-all flex items-center justify-between border ${isSelected
-                                                ? 'bg-emerald-500/20 border-emerald-500/50 text-white'
-                                                : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'
+                                            ? 'bg-emerald-500/20 border-emerald-500/50 text-white'
+                                            : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'
                                             }`}
                                     >
                                         <span>{option}</span>
@@ -140,8 +148,8 @@ export default function QuizComponent({ questions, onPass, onFail }) {
                     onClick={handleSubmit}
                     disabled={Object.keys(answers).length < questions.length}
                     className={`px-8 py-4 rounded-lg font-bold text-white transition-all flex items-center gap-2 ${Object.keys(answers).length < questions.length
-                            ? 'bg-slate-700 cursor-not-allowed opacity-50'
-                            : 'bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20'
+                        ? 'bg-slate-700 cursor-not-allowed opacity-50'
+                        : 'bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20'
                         }`}
                 >
                     Submit Answers

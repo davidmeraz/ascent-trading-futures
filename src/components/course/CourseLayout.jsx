@@ -1,48 +1,42 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, Outlet, useParams, useLocation, useNavigate } from 'react-router-dom';
-import { Book, Circle, Menu, X, ArrowLeft, Lock, CheckCircle, TrendingUp, Power } from 'lucide-react';
+import { Link, Outlet, useParams, useLocation } from 'react-router-dom';
+import { Book, Circle, Menu, X, ArrowLeft, Lock, CheckCircle, Power } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { COURSE_CONTENT } from '../../data/courseData';
+import { useStorage } from '../../hooks/useStorage';
+import CourseDashboard from './CourseDashboard';
 
 export default function CourseLayout() {
     const [isSidebarOpen, setSidebarOpen] = useState(true);
     const { lessonId } = useParams();
     const location = useLocation();
-    const navigate = useNavigate();
-    const [completedLessons, setCompletedLessons] = useState([]);
-    const [hasStarted, setHasStarted] = useState(() => localStorage.getItem('course_started') === 'true');
+    const [completedLessons, setCompletedLessons] = useStorage('completed_lessons', []);
+    const [hasStarted, setHasStarted] = useStorage('course_started', false);
 
     // Hold to start state
     const [startProgress, setStartProgress] = useState(0);
     const holdInterval = useRef(null);
     const startTime = useRef(null);
 
-    // Protect route - Check if purchased
+    // Cleanup interval on unmount to prevent memory leaks
     useEffect(() => {
-        const hasPurchased = localStorage.getItem('course_purchased');
-        if (!hasPurchased) {
-            navigate('/enrollment-success');
-        }
-    }, [navigate]);
+        return () => clearInterval(holdInterval.current);
+    }, []);
 
-    // Load progress on mount and when route changes (in case a quiz was just passed)
-    const loadProgress = () => {
+    // Reload from storage when route changes (quiz completion triggers storage event)
+    useEffect(() => {
         const stored = localStorage.getItem('completed_lessons');
         if (stored) {
-            setCompletedLessons(JSON.parse(stored));
+            try {
+                setCompletedLessons(JSON.parse(stored));
+            } catch {
+                // corrupted data — ignore
+            }
         }
-    };
-
-    useEffect(() => {
-        loadProgress();
-        // Listen for storage events (cross-tab or custom dispatch)
-        window.addEventListener('storage', loadProgress);
-        return () => window.removeEventListener('storage', loadProgress);
-    }, [location.pathname]); // Re-check when navigating
+    }, [location.pathname]);
 
     // Helper to check if a lesson is locked
     const isLessonLocked = (currentLessonId) => {
-        // Flatten all lessons to find the index
         const allLessons = Object.values(COURSE_CONTENT).flatMap(m => m.lessons);
         const currentIndex = allLessons.findIndex(l => l.id === currentLessonId);
 
@@ -102,7 +96,6 @@ export default function CourseLayout() {
     };
 
     const handleStart = () => {
-        localStorage.setItem('course_started', 'true');
         setHasStarted(true);
     };
 
@@ -204,6 +197,7 @@ export default function CourseLayout() {
                 <button
                     onClick={() => setSidebarOpen(!isSidebarOpen)}
                     className="p-2 bg-slate-800 rounded-lg text-white shadow-lg"
+                    aria-label="Toggle sidebar"
                 >
                     {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
                 </button>
@@ -317,7 +311,6 @@ export default function CourseLayout() {
                 {/* Top Header */}
                 <header className="sticky top-0 z-30 flex items-center justify-between px-8 py-5 bg-[#020617]/80 backdrop-blur-md border-b border-white/5">
                     {/* Breadcrumbs (Dynamic) */}
-                    {/* Breadcrumbs (Dynamic) */}
                     <div className="text-sm text-slate-400 flex items-center gap-2">
                         <Link to="/learn" className="hover:text-white transition-colors font-medium">Course</Link>
                         {lessonId && (
@@ -352,82 +345,12 @@ export default function CourseLayout() {
                     {lessonId ? (
                         <Outlet />
                     ) : (
-                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                            <h1 className="text-4xl font-bold text-white mb-2">Welcome back, Trader</h1>
-                            <p className="text-slate-400 mb-10 text-lg">Your journey to mastery continues.</p>
-
-                            {/* 3 Stats Cards */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                                {/* Card 1: Level */}
-                                <div className="p-6 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/5 relative overflow-hidden group hover:border-emerald-500/30 transition-colors">
-                                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                        <TrendingUp size={64} />
-                                    </div>
-                                    <h3 className="text-slate-400 text-sm font-medium uppercase tracking-wider mb-2">Current Level</h3>
-                                    <div className="text-3xl font-bold text-white mb-1">Noob Trader</div>
-                                    <div className="text-emerald-400 text-xs font-semibold">Phase 1 in progress</div>
-                                </div>
-
-                                {/* Card 2: Progress */}
-                                <div className="p-6 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/5 relative overflow-hidden group hover:border-blue-500/30 transition-colors">
-                                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                        <Book size={64} />
-                                    </div>
-                                    <h3 className="text-slate-400 text-sm font-medium uppercase tracking-wider mb-2">Course Progress</h3>
-                                    <div className="text-3xl font-bold text-white mb-1">{progressPercentage}%</div>
-                                    <div className="w-full bg-slate-700 h-1.5 rounded-full mt-2 overflow-hidden">
-                                        <div className="bg-blue-500 h-full rounded-full transition-all duration-1000" style={{ width: `${progressPercentage}%` }}></div>
-                                    </div>
-                                </div>
-
-                                {/* Card 3: XP / Quizzes */}
-                                <div className="p-6 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/5 relative overflow-hidden group hover:border-purple-500/30 transition-colors">
-                                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                        <CheckCircle size={64} />
-                                    </div>
-                                    <h3 className="text-slate-400 text-sm font-medium uppercase tracking-wider mb-2">Lessons Mastered</h3>
-                                    <div className="text-3xl font-bold text-white mb-1">{completedLessons.length} XP</div>
-                                    <div className="text-purple-400 text-xs font-semibold">Keep pushing!</div>
-                                </div>
-                            </div>
-
-                            <h2 className="text-xl font-semibold text-white mb-6">Continue Learning</h2>
-                            {/* Shows the next incomplete lesson or the first one */}
-                            <div className="space-y-4">
-                                {Object.entries(COURSE_CONTENT).map(([key, module]) => (
-                                    <div key={key} className="bg-slate-900/50 border border-white/5 rounded-xl p-6">
-                                        <h3 className="text-emerald-400 font-bold mb-4 uppercase text-xs tracking-widest">{module.title}</h3>
-                                        <div className="grid gap-3">
-                                            {module.lessons.map(lesson => (
-                                                <Link
-                                                    key={lesson.id}
-                                                    to={`/learn/${lesson.id}`}
-                                                    className={`flex items-center justify-between p-4 rounded-lg border transition-all ${isLessonCompleted(lesson.id)
-                                                        ? 'bg-emerald-500/5 border-emerald-500/20 text-slate-300'
-                                                        : isLessonLocked(lesson.id)
-                                                            ? 'bg-red-500/5 border-red-500/10 text-slate-500 cursor-not-allowed pointer-events-none'
-                                                            : 'bg-slate-800 border-white/10 text-white hover:border-emerald-500/50 hover:bg-slate-800/80'
-                                                        }`}
-                                                >
-                                                    <span className="flex items-center gap-3">
-                                                        {isLessonCompleted(lesson.id) ? (
-                                                            <CheckCircle size={18} className="text-emerald-500" />
-                                                        ) : isLessonLocked(lesson.id) ? (
-                                                            <Lock size={18} className="text-red-500" />
-                                                        ) : (
-                                                            <Circle size={18} className="text-slate-400" />
-                                                        )}
-                                                        {lesson.title}
-                                                    </span>
-                                                    {isLessonCompleted(lesson.id) && <span className="text-xs text-emerald-500 font-bold px-2 py-1 bg-emerald-500/10 rounded">COMPLETED</span>}
-                                                    {isLessonLocked(lesson.id) && <span className="text-xs text-red-500 font-bold px-2 py-1 bg-red-500/10 rounded">LOCKED</span>}
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        <CourseDashboard
+                            completedLessons={completedLessons}
+                            progressPercentage={progressPercentage}
+                            isLessonLocked={isLessonLocked}
+                            isLessonCompleted={isLessonCompleted}
+                        />
                     )}
                 </div>
             </main>

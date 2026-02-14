@@ -3,19 +3,26 @@ import { motion } from 'framer-motion';
 import { Check, Lock } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import confetti from 'canvas-confetti';
+import { useStorage } from '../../hooks/useStorage';
 
 export default function EnrollmentSuccess() {
     const navigate = useNavigate();
+    const [coursePurchased, setCoursePurchased] = useStorage('course_purchased', false);
     const [status, setStatus] = useState('idle'); // idle, holding, success
     const [progress, setProgress] = useState(0);
     const holdInterval = useRef(null);
     const startTime = useRef(null);
 
     useEffect(() => {
-        if (localStorage.getItem('course_purchased') === 'true') {
+        if (coursePurchased) {
             navigate('/learn');
         }
-    }, [navigate]);
+    }, [navigate, coursePurchased]);
+
+    // Cleanup interval on unmount to prevent memory leaks
+    useEffect(() => {
+        return () => clearInterval(holdInterval.current);
+    }, []);
 
     // Confetti Effect trigger
     const triggerConfetti = () => {
@@ -61,7 +68,7 @@ export default function EnrollmentSuccess() {
 
     const completePurchase = () => {
         setStatus('success');
-        localStorage.setItem('course_purchased', 'true');
+        setCoursePurchased(true);
         triggerConfetti();
         // Redirect after short delay
         setTimeout(() => {

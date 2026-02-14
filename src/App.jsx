@@ -7,6 +7,11 @@ import LearningPath from './components/LearningPath';
 import Footer from './components/Footer';
 import CourseLayout from './components/course/CourseLayout';
 import LessonView from './components/course/LessonView';
+import PlaceholderPage from './components/auth/PlaceholderPage';
+import EnrollmentSuccess from './components/auth/EnrollmentSuccess';
+import ErrorBoundary from './components/ErrorBoundary';
+import ProtectedRoute from './components/ProtectedRoute';
+import CourseDashboard from './components/course/CourseDashboard';
 
 function LandingPage() {
   return (
@@ -21,26 +26,28 @@ function LandingPage() {
   );
 }
 
-import Login from './components/auth/Login';
-import Register from './components/auth/Register';
-import EnrollmentSuccess from './components/auth/EnrollmentSuccess';
-
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/enrollment-success" element={<EnrollmentSuccess />} />
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<PlaceholderPage title="Login" />} />
+          <Route path="/register" element={<PlaceholderPage title="Register" />} />
+          <Route path="/enrollment-success" element={<EnrollmentSuccess />} />
 
-        {/* Course Routes */}
-        <Route path="/learn" element={<CourseLayout />}>
-          <Route path=":lessonId" element={<LessonView />} />
-          {/* Redirect or default view if no lesson selected, usually handled in layout or index route */}
-        </Route>
-      </Routes>
-    </BrowserRouter>
+          {/* Course Routes - Protected */}
+          <Route path="/learn" element={
+            <ProtectedRoute>
+              <CourseLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<CourseDashboard />} />
+            <Route path=":lessonId" element={<LessonView />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

@@ -1,26 +1,59 @@
-import { useState, useEffect } from 'react';
-import { useParams, Navigate, Link } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
-import { AlertCircle, Lightbulb, TrendingUp, Lock, ArrowRight } from 'lucide-react';
+import { TrendingUp, Lock, ArrowRight } from 'lucide-react';
 import { COURSE_CONTENT } from '../../data/courseData';
+import { getStorageValue } from '../../hooks/useStorage';
 import QuizComponent from './QuizComponent';
 
+/**
+ * Custom Markdown renderers — defined outside the component
+ * to avoid recreating the object on every render.
+ */
+const MarkdownComponents = {
+    h1: ({ ...props }) => <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-blue-500 mb-10 mt-2 tracking-tight" {...props} />,
+    h2: ({ ...props }) => <h2 className="text-2xl md:text-3xl font-semibold text-white mt-16 mb-8 border-b border-white/10 pb-4 flex items-center gap-3" {...props} />,
+    h3: ({ ...props }) => <h3 className="text-xl md:text-2xl font-semibold text-white mt-10 mb-4" {...props} />,
+    p: ({ ...props }) => <p className="text-lg text-slate-300 leading-8 mb-8 font-light" {...props} />,
+    ul: ({ ...props }) => <ul className="list-disc list-outside ml-6 space-y-4 mb-8 text-slate-300 leading-7" {...props} />,
+    ol: ({ ...props }) => <ol className="list-decimal list-outside ml-6 space-y-4 mb-8 text-slate-300 leading-7" {...props} />,
+    li: ({ ...props }) => <li className="pl-2" {...props} />,
+    blockquote: ({ children }) => (
+        <div className="border-l-4 border-emerald-500 bg-emerald-500/5 p-8 my-10 rounded-r-2xl italic text-slate-200 text-lg shadow-sm font-medium">
+            {children}
+        </div>
+    ),
+    img: ({ alt, ...props }) => (
+        <div className="my-10">
+            <img
+                {...props}
+                alt={alt}
+                className="rounded-2xl border border-white/10 shadow-2xl shadow-emerald-900/20 w-full object-cover max-h-[500px]"
+                loading="lazy"
+            />
+            {alt && (
+                <p className="text-center text-slate-500 text-sm mt-3 italic">{alt}</p>
+            )}
+        </div>
+    ),
+};
+
 export default function LessonView() {
-    const { module, lessonId } = useParams();
+    const { lessonId } = useParams();
     const [quizPassed, setQuizPassed] = useState(false);
 
-    // Find the lesson in our data based on URL params
-    // Searching across all modules for simplicity in this MVP
-    // Helper to find next and previous lesson
+    // Find lesson and navigation data
+    const allLessons = useMemo(
+        () => Object.values(COURSE_CONTENT).flatMap(m => m.lessons),
+        []
+    );
+    const currentIndex = allLessons.findIndex(l => l.id === lessonId);
+
     let activeLesson = null;
     let activeModule = null;
     let nextLessonId = null;
     let previousLessonId = null;
-
-    // Flatten all lessons to an array for easier navigation logic
-    const allLessons = Object.values(COURSE_CONTENT).flatMap(m => m.lessons);
-    const currentIndex = allLessons.findIndex(l => l.id === lessonId);
 
     if (currentIndex !== -1) {
         activeLesson = allLessons[currentIndex];
@@ -40,41 +73,28 @@ export default function LessonView() {
         }
     }
 
-    // Check if already completed on mount
+    // Check if already completed on mount or when lesson changes
     useEffect(() => {
-        const stored = localStorage.getItem('completed_lessons');
-        if (stored) {
-            const completed = JSON.parse(stored);
-            if (completed.includes(lessonId)) {
-                setQuizPassed(true);
-            } else {
-                setQuizPassed(false);
-            }
-        } else {
-            setQuizPassed(false);
-        }
+        const completedList = getStorageValue('completed_lessons', []);
+        setQuizPassed(completedList.includes(lessonId));
     }, [lessonId]);
 
-    // Check lock status
-    const stored = localStorage.getItem('completed_lessons');
-    const completed = stored ? JSON.parse(stored) : [];
-    const isLocked = currentIndex > 0 && !completed.includes(allLessons[currentIndex - 1].id);
+    // Check lock status using safe helper
+    const completedList = getStorageValue('completed_lessons', []);
+    const isLocked = currentIndex > 0 && !completedList.includes(allLessons[currentIndex - 1].id);
 
     if (!activeLesson) {
         return <div className="text-center text-slate-400 mt-20">Lesson not found. Select one from the sidebar.</div>;
     }
 
-
-
     const handleQuizPass = () => {
         setQuizPassed(true);
 
         // Save to localStorage so Sidebar unlocks next lesson
-        const stored = localStorage.getItem('completed_lessons');
-        const completed = stored ? JSON.parse(stored) : [];
+        const currentCompleted = getStorageValue('completed_lessons', []);
 
-        if (!completed.includes(lessonId)) {
-            const updated = [...completed, lessonId];
+        if (!currentCompleted.includes(lessonId)) {
+            const updated = [...currentCompleted, lessonId];
             localStorage.setItem('completed_lessons', JSON.stringify(updated));
 
             // Dispatch a custom event so the Sidebar (in a different component) knows to re-render
@@ -84,33 +104,6 @@ export default function LessonView() {
 
     const handleQuizFail = () => {
         setQuizPassed(false);
-    };
-
-    // Custom Markdown Components for "Premium" feel
-    const MarkdownComponents = {
-        h1: ({ node, ...props }) => <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-blue-500 mb-10 mt-2 tracking-tight" {...props} />,
-        h2: ({ node, ...props }) => <h2 className="text-2xl md:text-3xl font-semibold text-white mt-16 mb-8 border-b border-white/10 pb-4 flex items-center gap-3" {...props} />,
-        p: ({ node, ...props }) => <p className="text-lg text-slate-300 leading-8 mb-8 font-light" {...props} />,
-        ul: ({ node, ...props }) => <ul className="list-disc list-outside ml-6 space-y-4 mb-8 text-slate-300 leading-7" {...props} />,
-        ol: ({ node, ...props }) => <ol className="list-decimal list-outside ml-6 space-y-4 mb-8 text-slate-300 leading-7" {...props} />,
-        li: ({ node, ...props }) => <li className="pl-2" {...props} />,
-        blockquote: ({ node, ...props }) => (
-            <div className="border-l-4 border-emerald-500 bg-emerald-500/5 p-8 my-10 rounded-r-2xl italic text-slate-200 text-lg shadow-sm font-medium">
-                {props.children}
-            </div>
-        ),
-        img: ({ node, ...props }) => (
-            <div className="my-10">
-                <img
-                    {...props}
-                    className="rounded-2xl border border-white/10 shadow-2xl shadow-emerald-900/20 w-full object-cover max-h-[500px]"
-                    loading="lazy"
-                />
-                {props.alt && (
-                    <p className="text-center text-slate-500 text-sm mt-3 italic">{props.alt}</p>
-                )}
-            </div>
-        ),
     };
 
     return (
@@ -143,6 +136,7 @@ export default function LessonView() {
                     </div>
                 ) : (
                     <QuizComponent
+                        lessonId={lessonId}
                         questions={activeLesson.quiz}
                         onPass={handleQuizPass}
                         onFail={handleQuizFail}

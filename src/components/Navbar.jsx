@@ -5,22 +5,29 @@ import { Link } from 'react-router-dom';
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
 
+    const scrollTo = (id) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+            setIsOpen(false);
+        }
+    };
+
     return (
         <nav className="fixed w-full z-50 bg-[#020617]/80 backdrop-blur-md border-b border-white/10">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     <div className="flex items-center">
-                        <div className="flex-shrink-0 flex items-center gap-2">
+                        <Link to="/" className="flex-shrink-0 flex items-center gap-2">
                             <TrendingUp className="h-8 w-8 text-emerald-500" />
                             <span className="font-bold text-xl tracking-tight text-white">
                                 ASCENT <span className="text-emerald-500 font-light">TRADING</span>
                             </span>
-                        </div>
+                        </Link>
                         <div className="hidden md:block">
                             <div className="ml-10 flex items-baseline space-x-4">
-                                <a href="#" className="hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Markets</a>
-                                <a href="#" className="hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Education</a>
-                                <a href="#" className="hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">About</a>
+                                <button onClick={() => scrollTo('features')} className="hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors text-white/80 hover:text-white">Markets</button>
+                                <button onClick={() => scrollTo('learning-path')} className="hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors text-white/80 hover:text-white">Education</button>
                             </div>
                         </div>
                     </div>
@@ -36,6 +43,7 @@ export default function Navbar() {
                         <button
                             onClick={() => setIsOpen(!isOpen)}
                             className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-white/10 focus:outline-none"
+                            aria-label="Toggle navigation menu"
                         >
                             {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                         </button>
@@ -55,9 +63,8 @@ export default function Navbar() {
                             </Link>
                         </div>
                         <div className="border-t border-white/5 my-2 pt-2">
-                            <a href="#" className="block px-3 py-2 rounded-md text-base font-medium text-slate-400 hover:text-white hover:bg-white/5">Markets</a>
-                            <a href="#" className="block px-3 py-2 rounded-md text-base font-medium text-slate-400 hover:text-white hover:bg-white/5">Education</a>
-                            <a href="#" className="block px-3 py-2 rounded-md text-base font-medium text-slate-400 hover:text-white hover:bg-white/5">About</a>
+                            <button onClick={() => scrollTo('features')} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-slate-400 hover:text-white hover:bg-white/5">Markets</button>
+                            <button onClick={() => scrollTo('learning-path')} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-slate-400 hover:text-white hover:bg-white/5">Education</button>
                         </div>
                     </div>
                 </div>

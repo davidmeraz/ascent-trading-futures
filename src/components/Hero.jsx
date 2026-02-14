@@ -1,9 +1,10 @@
 import { ArrowRight, BarChart2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { getStorageValue } from '../hooks/useStorage';
 
 export default function Hero() {
-    const isPurchased = localStorage.getItem('course_purchased') === 'true';
+    const isPurchased = getStorageValue('course_purchased', false);
 
     return (
         <div className="relative overflow-hidden pt-32 pb-16 lg:pt-48 lg:pb-32">
@@ -19,7 +20,7 @@ export default function Hero() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         </span>
-                        Market Data Live
+                        Market Data (Demo)
                     </motion.div>
 
                     <motion.h1

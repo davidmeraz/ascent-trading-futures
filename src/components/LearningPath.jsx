@@ -1,7 +1,11 @@
-import { useRef } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { BookOpen, Skull, BrainCircuit, ArrowRight, Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getStorageValue } from '../hooks/useStorage';
+
+const ICON_MAP = {
+    BookOpen, BrainCircuit, Skull
+};
 
 const STEPS = [
     {
@@ -10,7 +14,7 @@ const STEPS = [
         subtitle: "Noob -> Trader",
         description: "Your journey begins here. Master the mechanics of the market, understand leverage, and place your first trade without blowing up.",
         color: "from-emerald-400 to-green-600",
-        icon: <BookOpen className="w-8 h-8 text-white" />,
+        icon: 'BookOpen',
         shadow: "shadow-emerald-500/20",
         status: "current",
         topics: ["Market Mechanics", "Risk Management 101", "Platform Mastery", "Basic Price Action"]
@@ -21,7 +25,7 @@ const STEPS = [
         subtitle: "Trader -> Pro",
         description: "Stop gambling, start operating. Build a statistical edge, master your psychology, and scale your sizing.",
         color: "from-blue-400 to-indigo-600",
-        icon: <BrainCircuit className="w-8 h-8 text-white" />,
+        icon: 'BrainCircuit',
         shadow: "shadow-blue-500/20",
         status: "locked",
         topics: ["Volume Analysis", "Advanced Psychology", "Probability Models", "Trade Journaling"]
@@ -30,9 +34,9 @@ const STEPS = [
         level: "Phase 3",
         title: "The Edge",
         subtitle: "Pro -> Institutional",
-        description: "compete with the algorithms. Deep liquidity concepts, macro-economic hedging, and order flow dominance.",
+        description: "Compete with the algorithms. Deep liquidity concepts, macro-economic hedging, and order flow dominance.",
         color: "from-rose-500 to-red-900",
-        icon: <Skull className="w-8 h-8 text-white" />,
+        icon: 'Skull',
         shadow: "shadow-rose-500/20",
         status: "locked",
         topics: ["Order Flow / Level 2", "Algo Tracking", "Macro Correlations", "Portfolio Hedging"]
@@ -96,7 +100,8 @@ export default function LearningPath() {
 
 function Card({ step, index }) {
     const isLocked = step.status === "locked";
-    const isPurchased = localStorage.getItem('course_purchased') === 'true';
+    const isPurchased = getStorageValue('course_purchased', false);
+    const Icon = ICON_MAP[step.icon];
 
     return (
         <motion.div
@@ -116,7 +121,7 @@ function Card({ step, index }) {
                             {step.level}
                         </span>
                         <div className={`p-3 rounded-xl bg-gradient-to-br ${step.color} shadow-lg ${step.shadow} ${isLocked ? 'grayscale opacity-50' : ''}`}>
-                            {step.icon}
+                            <Icon className="w-8 h-8 text-white" />
                         </div>
                     </div>
 
