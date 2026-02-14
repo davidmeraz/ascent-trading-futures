@@ -1,5 +1,6 @@
 import { TrendingUp, Menu, X } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
@@ -24,9 +25,9 @@ export default function Navbar() {
                         </div>
                     </div>
                     <div className="hidden md:block">
-                        <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                        <Link to="/learn/futures-origin" className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
                             Start Learning Free
-                        </button>
+                        </Link>
                     </div>
                     <div className="-mr-2 flex md:hidden">
                         <button
@@ -45,9 +46,9 @@ export default function Navbar() {
                         <a href="#" className="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/10">Markets</a>
                         <a href="#" className="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/10">Education</a>
                         <a href="#" className="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/10">About</a>
-                        <button className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-base font-medium transition-colors">
+                        <Link to="/learn/futures-origin" className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-base font-medium transition-colors text-center block">
                             Start Learning Free
-                        </button>
+                        </Link>
                     </div>
                 </div>
             )}
