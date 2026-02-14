@@ -185,12 +185,23 @@ export default function CourseLayout() {
                 {/* Top Header */}
                 <header className="sticky top-0 z-30 flex items-center justify-between px-8 py-5 bg-[#020617]/80 backdrop-blur-md border-b border-white/5">
                     {/* Breadcrumbs (Dynamic) */}
+                    {/* Breadcrumbs (Dynamic) */}
                     <div className="text-sm text-slate-400 flex items-center gap-2">
                         <Link to="/learn" className="hover:text-white transition-colors font-medium">Course</Link>
-                        <span className="text-slate-600">/</span>
-                        <span className="hover:text-white cursor-pointer transition-colors max-w-[100px] truncate md:max-w-none">{activeModuleTitle}</span>
-                        <span className="text-slate-600">/</span>
-                        <span className="text-white font-medium truncate">{activeLessonTitle}</span>
+                        {lessonId && (
+                            <>
+                                <span className="text-slate-600">/</span>
+                                <span className="hover:text-white cursor-pointer transition-colors max-w-[100px] truncate md:max-w-none">{activeModuleTitle}</span>
+                                <span className="text-slate-600">/</span>
+                                <span className="text-white font-medium truncate">{activeLessonTitle}</span>
+                            </>
+                        )}
+                        {!lessonId && (
+                            <>
+                                <span className="text-slate-600">/</span>
+                                <span className="text-white font-medium">Dashboard</span>
+                            </>
+                        )}
                     </div>
 
                     {/* User Profile - Top Right */}
@@ -260,10 +271,10 @@ export default function CourseLayout() {
                                                     key={lesson.id}
                                                     to={`/learn/${lesson.id}`}
                                                     className={`flex items-center justify-between p-4 rounded-lg border transition-all ${isLessonCompleted(lesson.id)
-                                                            ? 'bg-emerald-500/5 border-emerald-500/20 text-slate-300'
-                                                            : isLessonLocked(lesson.id)
-                                                                ? 'bg-slate-800/50 border-white/5 text-slate-600 cursor-not-allowed'
-                                                                : 'bg-slate-800 border-white/10 text-white hover:border-emerald-500/50 hover:bg-slate-800/80'
+                                                        ? 'bg-emerald-500/5 border-emerald-500/20 text-slate-300'
+                                                        : isLessonLocked(lesson.id)
+                                                            ? 'bg-slate-800/50 border-white/5 text-slate-600 cursor-not-allowed'
+                                                            : 'bg-slate-800 border-white/10 text-white hover:border-emerald-500/50 hover:bg-slate-800/80'
                                                         }`}
                                                 >
                                                     <span className="flex items-center gap-3">

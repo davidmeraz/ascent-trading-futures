@@ -21,11 +21,17 @@ function LandingPage() {
   );
 }
 
+import Login from './components/auth/Login';
+import Register from './components/auth/Register';
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
         {/* Course Routes */}
         <Route path="/learn" element={<CourseLayout />}>
           <Route path=":lessonId" element={<LessonView />} />
