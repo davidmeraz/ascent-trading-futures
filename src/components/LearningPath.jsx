@@ -96,6 +96,7 @@ export default function LearningPath() {
 
 function Card({ step, index }) {
     const isLocked = step.status === "locked";
+    const isPurchased = localStorage.getItem('course_purchased') === 'true';
 
     return (
         <motion.div
@@ -144,6 +145,11 @@ function Card({ step, index }) {
                             <Lock className="w-4 h-4" />
                             Next Phase
                         </div>
+                    ) : !isPurchased ? (
+                        <Link to="/enrollment-success" className="w-full py-4 rounded-xl font-bold text-slate-400 bg-white/5 flex items-center justify-center gap-2 border border-white/5 hover:border-emerald-500/50 hover:text-emerald-400 transition-all cursor-pointer">
+                            <Lock className="w-4 h-4" />
+                            Unlock Course
+                        </Link>
                     ) : (
                         <Link to="/learn/futures-origin" className={`w-full py-4 rounded-xl font-bold text-white bg-gradient-to-r ${step.color} opacity-90 hover:opacity-100 transition-opacity shadow-lg ${step.shadow} flex items-center justify-center gap-2`}>
                             Start Journey

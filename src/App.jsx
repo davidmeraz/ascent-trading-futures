@@ -23,6 +23,7 @@ function LandingPage() {
 
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
+import EnrollmentSuccess from './components/auth/EnrollmentSuccess';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/enrollment-success" element={<EnrollmentSuccess />} />
 
         {/* Course Routes */}
         <Route path="/learn" element={<CourseLayout />}>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, Outlet, useParams, useLocation } from 'react-router-dom';
+import { Link, Outlet, useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Book, Circle, Menu, X, ArrowLeft, Lock, CheckCircle, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { COURSE_CONTENT } from '../../data/courseData';
@@ -8,7 +8,16 @@ export default function CourseLayout() {
     const [isSidebarOpen, setSidebarOpen] = useState(true);
     const { lessonId } = useParams();
     const location = useLocation();
+    const navigate = useNavigate();
     const [completedLessons, setCompletedLessons] = useState([]);
+
+    // Protect route - Check if purchased
+    useEffect(() => {
+        const hasPurchased = localStorage.getItem('course_purchased');
+        if (!hasPurchased) {
+            navigate('/enrollment-success');
+        }
+    }, [navigate]);
 
     // Load progress on mount and when route changes (in case a quiz was just passed)
     const loadProgress = () => {

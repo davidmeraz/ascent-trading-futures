@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
 export default function Hero() {
+    const isPurchased = localStorage.getItem('course_purchased') === 'true';
+
     return (
         <div className="relative overflow-hidden pt-32 pb-16 lg:pt-48 lg:pb-32">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -45,8 +47,8 @@ export default function Hero() {
                         transition={{ duration: 0.5, delay: 0.3 }}
                         className="flex flex-col sm:flex-row gap-4 justify-center items-center"
                     >
-                        <Link to="/learn" className="group bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all flex items-center gap-2">
-                            Start Free Course
+                        <Link to={isPurchased ? "/learn" : "/enrollment-success"} className="group bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all flex items-center gap-2">
+                            {isPurchased ? "Continue Learning" : "Start Futures Course"}
                             <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                         </Link>
                         <button className="group px-8 py-4 rounded-lg text-lg font-semibold text-white border border-white/10 hover:bg-white/5 transition-all flex items-center gap-2">
