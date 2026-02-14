@@ -6,6 +6,7 @@ import { TrendingUp, Lock, ArrowRight } from 'lucide-react';
 import { COURSE_CONTENT } from '../../data/courseData';
 import { getStorageValue } from '../../hooks/useStorage';
 import QuizComponent from './QuizComponent';
+import PrismaticImage from './PrismaticImage';
 
 /**
  * Custom Markdown renderers — defined outside the component
@@ -24,19 +25,7 @@ const MarkdownComponents = {
             {children}
         </div>
     ),
-    img: ({ alt, ...props }) => (
-        <div className="my-10">
-            <img
-                {...props}
-                alt={alt}
-                className="rounded-2xl border border-white/10 shadow-2xl shadow-emerald-900/20 w-full object-cover max-h-[500px]"
-                loading="lazy"
-            />
-            {alt && (
-                <p className="text-center text-slate-500 text-sm mt-3 italic">{alt}</p>
-            )}
-        </div>
-    ),
+    img: ({ alt, src }) => <PrismaticImage src={src} alt={alt} />,
 };
 
 export default function LessonView() {
