@@ -2,7 +2,17 @@ import { useState, useEffect } from 'react';
 import { CheckCircle, Clock, Lock, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export default function QuizComponent({ lessonId, questions, onPass, onFail }) {
+export default function QuizComponent({ lessonId, questions, onPass, onFail, theme = {
+    primary: 'text-emerald-400',
+    gradient: 'from-emerald-400 to-emerald-600',
+    border: 'border-emerald-500',
+    bg: 'bg-emerald-500',
+    bgSoft: 'bg-emerald-500/10',
+    blockquoteBg: 'bg-emerald-500/5',
+    button: 'bg-emerald-600 hover:bg-emerald-500',
+    shadow: 'shadow-emerald-500/20 hover:shadow-emerald-500/40',
+    icon: 'text-emerald-500',
+} }) {
     const [answers, setAnswers] = useState({});
     const [submitted, setSubmitted] = useState(false);
     const [passed, setPassed] = useState(false);
@@ -62,9 +72,11 @@ export default function QuizComponent({ lessonId, questions, onPass, onFail }) {
         if (Object.keys(answers).length < questions.length) return; // Must answer all
 
         setSubmitted(true);
-
+        // Calculate correct answers *before* state updates
         let correctCount = 0;
         questions.forEach((q, index) => {
+            // Need to compare with the intended answer
+            // The state answers[index] holds the selected option index
             if (answers[index] === q.correctAnswer) {
                 correctCount++;
             }
@@ -105,8 +117,8 @@ export default function QuizComponent({ lessonId, questions, onPass, onFail }) {
 
     if (passed) {
         return (
-            <div className="mt-12 p-8 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-center">
-                <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
+            <div className={`mt-12 p-8 ${theme.bgSoft} border ${theme.border}/20 rounded-2xl text-center`}>
+                <CheckCircle className={`w-12 h-12 ${theme.icon} mx-auto mb-4`} />
                 <h3 className="text-2xl font-bold text-white mb-2">Assessment Passed!</h3>
                 <p className="text-slate-400">You have unlocked the next lesson.</p>
             </div>
@@ -118,29 +130,32 @@ export default function QuizComponent({ lessonId, questions, onPass, onFail }) {
             <h3 className="text-2xl font-bold text-white mb-8">Knowledge Check</h3>
 
             <div className="space-y-8">
-                {questions.map((q, qIndex) => (
-                    <div key={qIndex} className="bg-[#0B0F1C] p-6 rounded-xl border border-white/5">
-                        <p className="text-lg font-medium text-white mb-4">{q.question}</p>
-                        <div className="space-y-3">
-                            {q.options.map((option, oIndex) => {
-                                const isSelected = answers[qIndex] === oIndex;
-                                return (
-                                    <button
-                                        key={oIndex}
-                                        onClick={() => handleSelect(qIndex, oIndex)}
-                                        className={`w-full text-left p-4 rounded-lg transition-all flex items-center justify-between border ${isSelected
-                                            ? 'bg-emerald-500/20 border-emerald-500/50 text-white'
-                                            : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'
-                                            }`}
-                                    >
-                                        <span>{option}</span>
-                                        {isSelected && <div className="w-3 h-3 rounded-full bg-emerald-500" />}
-                                    </button>
-                                );
-                            })}
+                {questions.map((q, qIndex) => {
+                    const selectedOption = answers[qIndex];
+                    return (
+                        <div key={qIndex} className="bg-[#0B0F1C] p-6 rounded-xl border border-white/5">
+                            <p className="text-lg font-medium text-white mb-4">{q.question}</p>
+                            <div className="space-y-3">
+                                {q.options.map((option, oIndex) => {
+                                    const isSelected = selectedOption === oIndex;
+                                    return (
+                                        <button
+                                            key={oIndex}
+                                            onClick={() => handleSelect(qIndex, oIndex)}
+                                            className={`w-full text-left p-4 rounded-lg transition-all flex items-center justify-between border ${isSelected
+                                                ? `${theme.bgSoft} ${theme.border}/50 text-white`
+                                                : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'
+                                                }`}
+                                        >
+                                            <span>{option}</span>
+                                            {isSelected && <div className={`w-3 h-3 rounded-full ${theme.bg}`} />}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             <div className="mt-8 flex justify-end">
@@ -149,7 +164,7 @@ export default function QuizComponent({ lessonId, questions, onPass, onFail }) {
                     disabled={Object.keys(answers).length < questions.length}
                     className={`px-8 py-4 rounded-lg font-bold text-white transition-all flex items-center gap-2 ${Object.keys(answers).length < questions.length
                         ? 'bg-slate-700 cursor-not-allowed opacity-50'
-                        : 'bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20'
+                        : `${theme.button} shadow-lg ${theme.shadow}`
                         }`}
                 >
                     Submit Answers

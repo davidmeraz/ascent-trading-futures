@@ -12,25 +12,72 @@ import PrismaticImage from './PrismaticImage';
  * Custom Markdown renderers — defined outside the component
  * to avoid recreating the object on every render.
  */
-const MarkdownComponents = {
-    h1: ({ ...props }) => <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-blue-500 mb-10 mt-2 tracking-tight" {...props} />,
-    h2: ({ ...props }) => <h2 className="text-2xl md:text-3xl font-semibold text-white mt-16 mb-8 border-b border-white/10 pb-4 flex items-center gap-3" {...props} />,
-    h3: ({ ...props }) => <h3 className="text-xl md:text-2xl font-semibold text-white mt-10 mb-4" {...props} />,
-    p: ({ ...props }) => <p className="text-lg text-slate-300 leading-8 mb-8 font-light" {...props} />,
-    ul: ({ ...props }) => <ul className="list-disc list-outside ml-6 space-y-4 mb-8 text-slate-300 leading-7" {...props} />,
-    ol: ({ ...props }) => <ol className="list-decimal list-outside ml-6 space-y-4 mb-8 text-slate-300 leading-7" {...props} />,
-    li: ({ ...props }) => <li className="pl-2" {...props} />,
-    blockquote: ({ children }) => (
-        <div className="border-l-4 border-emerald-500 bg-emerald-500/5 p-8 my-10 rounded-r-2xl italic text-slate-200 text-lg shadow-sm font-medium">
-            {children}
-        </div>
-    ),
-    img: ({ alt, src }) => <PrismaticImage src={src} alt={alt} />,
-};
-
-export default function LessonView() {
+export default function LessonView({ currentLevel: propLevel }) {
     const { lessonId } = useParams();
     const [quizPassed, setQuizPassed] = useState(false);
+
+    // Get current level from props or storage
+    const storageLevel = getStorageValue('current_level', 'noob');
+    const currentLevel = propLevel || storageLevel;
+
+    // Theme configuration
+    const theme = useMemo(() => {
+        const colors = {
+            noob: {
+                primary: 'text-emerald-400',
+                gradient: 'from-emerald-400 to-emerald-600',
+                border: 'border-emerald-500',
+                bg: 'bg-emerald-500',
+                bgSoft: 'bg-emerald-500/10',
+                blockquoteBg: 'bg-emerald-500/5',
+                button: 'bg-emerald-600 hover:bg-emerald-500',
+                shadow: 'shadow-emerald-500/20 hover:shadow-emerald-500/40',
+                icon: 'text-emerald-500',
+            },
+            pro: {
+                primary: 'text-blue-400',
+                gradient: 'from-blue-400 to-blue-600',
+                border: 'border-blue-500',
+                bg: 'bg-blue-500',
+                bgSoft: 'bg-blue-500/10',
+                blockquoteBg: 'bg-blue-500/5',
+                button: 'bg-blue-600 hover:bg-blue-500',
+                shadow: 'shadow-blue-500/20 hover:shadow-blue-500/40',
+                icon: 'text-blue-500',
+            },
+            expert: {
+                primary: 'text-red-400',
+                gradient: 'from-red-400 to-red-600',
+                border: 'border-red-500',
+                bg: 'bg-red-500',
+                bgSoft: 'bg-red-500/10',
+                blockquoteBg: 'bg-red-500/5',
+                button: 'bg-red-600 hover:bg-red-500',
+                shadow: 'shadow-red-500/20 hover:shadow-red-500/40',
+                icon: 'text-red-500',
+            }
+        };
+        return colors[currentLevel] || colors.noob;
+    }, [currentLevel]);
+
+    // Dynamic Markdown Components
+    const MarkdownComponents = useMemo(() => ({
+        h1: ({ ...props }) => <h1 className={`text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r ${theme.gradient} mb-10 mt-2 tracking-tight`} {...props} />,
+        h2: ({ ...props }) => <h2 className="text-2xl md:text-3xl font-semibold text-white mt-16 mb-8 border-b border-white/10 pb-4 flex items-center gap-3" {...props} />,
+        h3: ({ ...props }) => <h3 className="text-xl md:text-2xl font-semibold text-white mt-10 mb-4" {...props} />,
+        p: ({ ...props }) => <p className="text-lg text-slate-300 leading-8 mb-8 font-light" {...props} />,
+        ul: ({ ...props }) => <ul className="list-disc list-outside ml-6 space-y-4 mb-8 text-slate-300 leading-7" {...props} />,
+        ol: ({ ...props }) => <ol className="list-decimal list-outside ml-6 space-y-4 mb-8 text-slate-300 leading-7" {...props} />,
+        li: ({ ...props }) => <li className="pl-2" {...props} />,
+        blockquote: ({ children }) => (
+            <div className={`border-l-4 ${theme.border} ${theme.blockquoteBg} p-8 my-10 rounded-r-2xl italic text-slate-200 text-lg shadow-sm font-medium`}>
+                {children}
+            </div>
+        ),
+        a: ({ ...props }) => <a className={`${theme.primary} hover:underline font-medium`} {...props} />,
+        strong: ({ ...props }) => <strong className={`${theme.primary} font-bold`} {...props} />,
+        img: ({ alt, src }) => <PrismaticImage src={src} alt={alt} />,
+    }), [theme]);
 
     // Find lesson and navigation data
     const allLessons = useMemo(
@@ -68,10 +115,6 @@ export default function LessonView() {
         setQuizPassed(completedList.includes(lessonId));
     }, [lessonId]);
 
-    // Check lock status using safe helper
-    const completedList = getStorageValue('completed_lessons', []);
-    const isLocked = currentIndex > 0 && !completedList.includes(allLessons[currentIndex - 1].id);
-
     if (!activeLesson) {
         return <div className="text-center text-slate-400 mt-20">Lesson not found. Select one from the sidebar.</div>;
     }
@@ -79,14 +122,10 @@ export default function LessonView() {
     const handleQuizPass = () => {
         setQuizPassed(true);
 
-        // Save to localStorage so Sidebar unlocks next lesson
         const currentCompleted = getStorageValue('completed_lessons', []);
-
         if (!currentCompleted.includes(lessonId)) {
             const updated = [...currentCompleted, lessonId];
             localStorage.setItem('completed_lessons', JSON.stringify(updated));
-
-            // Dispatch a custom event so the Sidebar (in a different component) knows to re-render
             window.dispatchEvent(new Event('storage'));
         }
     };
@@ -99,12 +138,12 @@ export default function LessonView() {
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            key={lessonId} // Triggers animation on route change
+            key={lessonId}
             className="max-w-4xl mx-auto"
         >
-            <div className="mb-4 flex items-center gap-2 text-emerald-500 text-sm font-bold uppercase tracking-widest">
-                <span className="w-8 h-[1px] bg-emerald-500/50"></span>
-                {activeModule.title}
+            <div className={`mb-4 flex items-center gap-2 ${theme.primary} text-sm font-bold uppercase tracking-widest`}>
+                <span className={`w-8 h-[1px] ${theme.bg}`}></span>
+                {activeModule?.title || 'Course'}
             </div>
 
             <div className="prose prose-invert prose-lg max-w-none">
@@ -116,9 +155,9 @@ export default function LessonView() {
             {/* Quiz Section */}
             {activeLesson.quiz && (
                 quizPassed ? (
-                    <div className="mt-16 p-8 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-center">
-                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 mb-4">
-                            <TrendingUp className="w-6 h-6 text-emerald-500" />
+                    <div className={`mt-16 p-8 ${theme.bgSoft} border ${theme.border}/20 rounded-2xl text-center`}>
+                        <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full ${theme.bg}/20 mb-4`}>
+                            <TrendingUp className={`w-6 h-6 ${theme.icon}`} />
                         </div>
                         <h3 className="text-2xl font-bold text-white mb-2">Lesson Completed!</h3>
                         <p className="text-slate-400">You have already mastered this topic.</p>
@@ -129,18 +168,19 @@ export default function LessonView() {
                         questions={activeLesson.quiz}
                         onPass={handleQuizPass}
                         onFail={handleQuizFail}
+                        theme={theme}
                     />
                 )
             )}
 
-            {/* Navigation Footer for the Lesson */}
+            {/* Navigation Footer */}
             <div className="mt-24 pt-10 border-t border-white/10 flex justify-between items-center">
                 {previousLessonId ? (
                     <Link to={`/learn/${previousLessonId}`} className="px-6 py-3 rounded-lg border border-white/10 hover:bg-white/5 text-slate-400 hover:text-white transition-colors text-sm font-medium">
                         ← Previous Lesson
                     </Link>
                 ) : (
-                    <div></div> /* Spacer */
+                    <div></div>
                 )}
 
                 {nextLessonId ? (
@@ -150,7 +190,7 @@ export default function LessonView() {
                             <span className="text-sm font-medium">Pass Quiz to Unlock Next</span>
                         </div>
                     ) : (
-                        <Link to={`/learn/${nextLessonId}`} className="group px-6 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 flex items-center gap-2">
+                        <Link to={`/learn/${nextLessonId}`} className={`group px-6 py-3 rounded-lg ${theme.button} text-white font-bold transition-all shadow-lg ${theme.shadow} flex items-center gap-2`}>
                             Next Lesson
                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         </Link>

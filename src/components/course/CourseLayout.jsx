@@ -10,6 +10,29 @@ import CourseDashboard from './CourseDashboard';
 // Level definitions
 // ═══════════════════════════════════════════
 const LEVELS = {
+    none: {
+        key: 'none',
+        name: 'Unranked',
+        label: 'None',
+        Icon: Circle,
+        color: 'slate',
+        gradient: 'from-slate-500 to-slate-600',
+        shadow: 'shadow-slate-500/25',
+        borderActive: 'border-slate-400/20',
+        textColor: 'text-slate-400',
+        headerGradient: 'from-slate-400 to-slate-500',
+        activeBg: 'bg-slate-500/5',
+        activeBorder: 'border-slate-500/15',
+        activeText: 'text-slate-400',
+        activeItemBg: 'bg-slate-500/10',
+        completedIcon: 'text-slate-500',
+        progressCircle: 'text-slate-500',
+        navbarAccent: 'via-slate-500/30',
+        navbarActiveBg: 'bg-slate-500/15',
+        navbarActiveText: 'text-slate-400',
+        navbarActiveBorder: 'border-slate-500/20',
+        navbarActiveShadow: 'shadow-slate-500/10',
+    },
     noob: {
         key: 'noob',
         name: 'The Noob',
@@ -84,7 +107,7 @@ const LEVELS = {
     },
 };
 
-const LEVEL_ORDER = ['noob', 'pro', 'expert'];
+const LEVEL_ORDER = ['none', 'noob', 'pro', 'expert'];
 
 // Small reusable progress circle component
 function ModuleProgressCircle({ percentage, size = 32, strokeWidth = 3, fontSize = '8px' }) {
@@ -133,12 +156,12 @@ function ModuleProgressCircle({ percentage, size = 32, strokeWidth = 3, fontSize
 }
 
 export default function CourseLayout() {
-    const [isSidebarOpen, setSidebarOpen] = useState(true);
+    const [isSidebarOpen, setSidebarOpen] = useState(false);
     const { lessonId } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
     const [completedLessons, setCompletedLessons] = useStorage('completed_lessons', []);
-    const [hasStarted, setHasStarted] = useStorage('course_started', false);
+
 
     // Collapsible module state for sidebar — all collapsed by default
     const [collapsedModules, setCollapsedModules] = useState(() =>
@@ -146,29 +169,58 @@ export default function CourseLayout() {
     );
 
     // Hold to start state
-    const [startProgress, setStartProgress] = useState(0);
-    const holdInterval = useRef(null);
-    const startTime = useRef(null);
     const headerRef = useRef(null);
+    const levelSwitcherRef = useRef(null);
+    const [explosions, setExplosions] = useState([]);
 
-    // Flying rocket animation state
-    const [flyingRocket, setFlyingRocket] = useState(null);
+    const triggerExplosion = (levelKey, origin) => {
+        let x = window.innerWidth / 2;
+        let y = window.innerHeight / 2;
+
+        if (origin) {
+            x = origin.x;
+            y = origin.y;
+        } else if (levelSwitcherRef.current) {
+            const rect = levelSwitcherRef.current.getBoundingClientRect();
+            x = rect.left + rect.width / 2;
+            y = rect.top + rect.height / 2;
+        }
+
+        const newExplosion = {
+            id: Date.now() + Math.random(),
+            x,
+            y,
+            color: LEVELS[levelKey].color
+        };
+
+        setExplosions(prev => [...prev, newExplosion]);
+    };
+
+    const handleExplosionComplete = (id) => {
+        setExplosions(prev => prev.filter(e => e.id !== id));
+    };
+
+    // Flying object animation state
+    const [flyingObject, setFlyingObject] = useState(null);
     const [rocketLanded, setRocketLanded] = useState(() => {
         try {
             return JSON.parse(localStorage.getItem('pro_level_unlocked')) || false;
         } catch { return false; }
     });
 
+    const [noobUnlocked, setNoobUnlocked] = useStorage('noob_level_unlocked', false);
+    const [expertUnlocked, setExpertUnlocked] = useStorage('expert_level_unlocked', false);
+
     // Level switcher state
-    const [currentLevel, setCurrentLevel] = useStorage('current_level', 'noob');
+    const [currentLevel, setCurrentLevel] = useStorage('current_level', 'none');
     const [levelSwitcherOpen, setLevelSwitcherOpen] = useState(false);
-    const levelSwitcherRef = useRef(null);
 
     // Determine which levels are unlocked
     const unlockedLevels = {
-        noob: true,
+        none: true,
+        noob: noobUnlocked,
         pro: rocketLanded,
-        expert: (() => { try { return JSON.parse(localStorage.getItem('expert_level_unlocked')) || false; } catch { return false; } })(),
+        expert: expertUnlocked,
     };
 
     // Close level switcher when clicking outside
@@ -183,10 +235,10 @@ export default function CourseLayout() {
     }, []);
 
     const activeLevel = LEVELS[currentLevel] || LEVELS.noob;
-    const otherLevels = LEVEL_ORDER.filter(k => k !== currentLevel).map(k => LEVELS[k]);
+    const otherLevels = LEVEL_ORDER.filter(k => k !== currentLevel && k !== 'none').map(k => LEVELS[k]);
 
     // Content filtered by current level
-    const levelContent = COURSE_CONTENT_BY_LEVEL[currentLevel] || COURSE_CONTENT_BY_LEVEL.noob;
+    const levelContent = currentLevel === 'none' ? {} : (COURSE_CONTENT_BY_LEVEL[currentLevel] || COURSE_CONTENT_BY_LEVEL.noob);
 
     // ─── TEST: Mark ALL lessons as completed on first load ───
     useEffect(() => {
@@ -218,7 +270,7 @@ export default function CourseLayout() {
 
     // Cleanup interval on unmount to prevent memory leaks
     useEffect(() => {
-        return () => clearInterval(holdInterval.current);
+        // No intervals to clear related to start screen
     }, []);
 
     // Reload from storage when route changes (quiz completion triggers storage event)
@@ -297,7 +349,8 @@ export default function CourseLayout() {
         const endX = headerRect.left + headerRect.width / 2;
         const endY = headerRect.top + headerRect.height / 2;
 
-        setFlyingRocket({
+        setFlyingObject({
+            type: 'rocket',
             startX: rocketPos.x,
             startY: rocketPos.y,
             endX,
@@ -306,21 +359,27 @@ export default function CourseLayout() {
 
         // Step 1: Rocket lands → mark Pro as unlocked
         setTimeout(() => {
-            setFlyingRocket(null);
+            setFlyingObject(null);
             setRocketLanded(true);
-        }, 1400);
+        }, 1200);
 
-        // Step 2: Open the level switcher dropdown
+        // Step 2: Open switcher to show unlocked level
         setTimeout(() => {
             setLevelSwitcherOpen(true);
+        }, 1400);
+
+        // Step 3: Trigger explosion and switch level quickly
+        setTimeout(() => {
+            triggerExplosion('pro');
+            // Keep menu open for a split second during explosion for better visual continuity
+            setTimeout(() => setLevelSwitcherOpen(false), 300);
+
+            setTimeout(() => {
+                setCurrentLevel('pro');
+                navigate('/learn');
+            }, 600);
         }, 2200);
 
-        // Step 3: Auto-switch to Pro level and close dropdown
-        setTimeout(() => {
-            setCurrentLevel('pro');
-            setLevelSwitcherOpen(false);
-            navigate('/learn');
-        }, 3400);
     }, []);
 
     const startHold = () => {
@@ -346,49 +405,72 @@ export default function CourseLayout() {
 
     const handleStart = () => {
         setHasStarted(true);
+        setSidebarOpen(false);
+        if (!currentLevel || currentLevel === 'noob') {
+            setCurrentLevel('none');
+        }
     };
 
-    if (!hasStarted && !lessonId) {
-        return (
-            <div className="flex h-screen items-center justify-center bg-[#020617] text-white relative overflow-hidden">
-                {/* Background Effects */}
-                <div className="absolute inset-0 z-0">
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-3xl"></div>
-                </div>
+    const handleUnlockNoob = (origin) => {
+        triggerExplosion('noob', origin);
 
-                <div className="z-10 text-center max-w-md px-6">
-                    <div className="mb-8">
-                        <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center shadow-2xl shadow-emerald-500/20 mb-6">
-                            <Power size={36} />
-                        </div>
-                        <h1 className="text-3xl font-bold mb-3">Ready to Begin?</h1>
-                        <p className="text-slate-400">Hold the button below to power up your trading journey.</p>
-                    </div>
+        // Delay the actual level switch to let the shockwave propagate first
+        setTimeout(() => {
+            setNoobUnlocked(true);
+            setCurrentLevel('noob');
+            navigate('/learn');
+        }, 600);
+    };
 
-                    <div className="relative">
-                        <button
-                            onMouseDown={startHold}
-                            onMouseUp={endHold}
-                            onMouseLeave={endHold}
-                            onTouchStart={startHold}
-                            onTouchEnd={endHold}
-                            className="relative w-48 h-14 rounded-2xl bg-emerald-600 font-bold text-white overflow-hidden select-none group hover:shadow-lg hover:shadow-emerald-500/30 transition-shadow"
-                        >
-                            <div
-                                className="absolute inset-0 bg-emerald-400 transition-none"
-                                style={{ width: `${startProgress}%` }}
-                            />
-                            <span className="relative z-10 flex items-center justify-center gap-2">
-                                <Power size={18} />
-                                {startProgress > 0 ? `${Math.round(startProgress)}%` : 'Hold to Start'}
-                            </span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    const handleExpertUnlock = useCallback((startPos) => {
+        if (!headerRef.current) return;
+        const headerRect = headerRef.current.getBoundingClientRect();
+        const endX = headerRect.left + headerRect.width / 2;
+        const endY = headerRect.top + headerRect.height / 2;
+
+        setFlyingObject({
+            type: 'crown',
+            startX: startPos.x,
+            startY: startPos.y,
+            endX,
+            endY,
+        });
+
+        // Step 1: Crown lands → mark Expert as unlocked
+        setTimeout(() => {
+            setFlyingObject(null);
+            setExpertUnlocked(true);
+        }, 1200);
+
+        // Step 2: Open switcher to show unlocked level
+        setTimeout(() => {
+            setLevelSwitcherOpen(true);
+        }, 1400);
+
+        // Step 3: Trigger explosion and switch level quickly
+        setTimeout(() => {
+            triggerExplosion('expert');
+            // Keep menu open for a split second during explosion for better visual continuity
+            setTimeout(() => setLevelSwitcherOpen(false), 300);
+
+            setTimeout(() => {
+                setCurrentLevel('expert');
+                navigate('/learn');
+            }, 600);
+        }, 2200);
+
+    }, []);
+
+
+
+    const mainRef = useRef(null);
+
+    // Scroll to top when lesson or level changes
+    useEffect(() => {
+        if (mainRef.current) {
+            mainRef.current.scrollTo(0, 0);
+        }
+    }, [lessonId, currentLevel]);
 
     return (
         <div className="flex h-screen bg-[#020617] text-white overflow-hidden font-sans">
@@ -466,104 +548,109 @@ export default function CourseLayout() {
 
                 {/* Module List with Collapsible Sections */}
                 <div className="flex-1 overflow-y-auto p-5 space-y-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent pb-28">
-                    {Object.entries(levelContent).map(([key, module]) => {
-                        const isCollapsed = collapsedModules[key] === true;
-                        const modProgress = getModuleProgress(key);
-                        const hasActiveLesson = module.lessons.some(l => l.id === lessonId);
+                    {Object.keys(levelContent).length === 0 ? (
+                        <div className="h-full flex items-center justify-center opacity-30">
+                            <Sprout size={48} className="text-slate-600" />
+                        </div>
+                    ) : (
+                        Object.entries(levelContent).map(([key, module]) => {
+                            const isCollapsed = collapsedModules[key] === true;
+                            const modProgress = getModuleProgress(key);
+                            const hasActiveLesson = module.lessons.some(l => l.id === lessonId);
 
-                        return (
-                            <div key={key} className="rounded-xl overflow-hidden">
-                                {/* Module Header — clickable for collapse */}
-                                <button
-                                    onClick={() => toggleSidebarModule(key)}
-                                    className={`w-full flex items-center gap-3 px-4 py-3.5 text-left rounded-xl transition-all duration-200 group
+                            return (
+                                <div key={key} className="rounded-xl overflow-hidden">
+                                    {/* Module Header — clickable for collapse */}
+                                    <button
+                                        onClick={() => toggleSidebarModule(key)}
+                                        className={`w-full flex items-center gap-3 px-4 py-3.5 text-left rounded-xl transition-all duration-200 group
                                         ${hasActiveLesson
-                                            ? `${activeLevel.activeBg} border ${activeLevel.activeBorder}`
-                                            : 'hover:bg-white/5 border border-transparent'
-                                        }`}
-                                >
-                                    {/* Chevron */}
-                                    <motion.div
-                                        animate={{ rotate: isCollapsed ? 0 : 90 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="text-slate-500 shrink-0"
+                                                ? `${activeLevel.activeBg} border ${activeLevel.activeBorder}`
+                                                : 'hover:bg-white/5 border border-transparent'
+                                            }`}
                                     >
-                                        <ChevronRight size={16} />
-                                    </motion.div>
-
-                                    {/* Module title — "Module X:" in green, rest in white */}
-                                    <span className="text-sm font-semibold flex-1 truncate transition-colors">
-                                        {(() => {
-                                            const colonIndex = module.title.indexOf(':');
-                                            if (colonIndex === -1) return <span className={activeLevel.activeText}>{module.title}</span>;
-                                            return (
-                                                <>
-                                                    <span className={activeLevel.activeText}>{module.title.slice(0, colonIndex + 1)}</span>
-                                                    <span className="text-slate-200 group-hover:text-white">{module.title.slice(colonIndex + 1)}</span>
-                                                </>
-                                            );
-                                        })()}
-                                    </span>
-
-                                    {/* Completed count */}
-                                    <span className="text-xs text-slate-500 font-medium tabular-nums shrink-0">
-                                        {modProgress.completed}/{modProgress.total}
-                                    </span>
-                                </button>
-
-                                {/* Expandable lesson list */}
-                                <AnimatePresence initial={false}>
-                                    {!isCollapsed && (
+                                        {/* Chevron */}
                                         <motion.div
-                                            initial={{ height: 0, opacity: 0 }}
-                                            animate={{ height: 'auto', opacity: 1 }}
-                                            exit={{ height: 0, opacity: 0 }}
-                                            transition={{ duration: 0.25, ease: 'easeInOut' }}
-                                            className="overflow-hidden"
+                                            animate={{ rotate: isCollapsed ? 0 : 90 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="text-slate-500 shrink-0"
                                         >
-                                            <div className="space-y-1 pt-1.5 pb-3 pl-4">
-                                                {module.lessons.map((lesson) => {
-                                                    const isActive = lessonId === lesson.id;
-                                                    const locked = isLessonLocked(lesson.id);
-                                                    const completed = isLessonCompleted(lesson.id);
-
-                                                    if (locked) {
-                                                        return (
-                                                            <div key={lesson.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] text-slate-500 cursor-not-allowed opacity-75">
-                                                                <Lock size={17} className="text-red-500 shrink-0" />
-                                                                {lesson.title}
-                                                            </div>
-                                                        );
-                                                    }
-
-                                                    return (
-                                                        <Link
-                                                            key={lesson.id}
-                                                            to={`/learn/${lesson.id}`}
-                                                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] transition-all duration-200 group
-                                                                ${isActive
-                                                                    ? `${activeLevel.activeItemBg} ${activeLevel.activeText} font-medium`
-                                                                    : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
-                                                                }`}
-                                                        >
-                                                            {completed ? (
-                                                                <CheckCircle size={17} className={`${activeLevel.completedIcon} shrink-0`} />
-                                                            ) : isActive ? (
-                                                                <Book size={17} className={`${activeLevel.activeText} shrink-0`} />
-                                                            ) : (
-                                                                <Circle size={17} className="opacity-30 group-hover:opacity-100 transition-opacity shrink-0" />
-                                                            )}
-                                                            {lesson.title}
-                                                        </Link>
-                                                    );
-                                                })}
-                                            </div>
+                                            <ChevronRight size={16} />
                                         </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        );
-                    })}
+
+                                        {/* Module title — "Module X:" in green, rest in white */}
+                                        <span className="text-sm font-semibold flex-1 truncate transition-colors">
+                                            {(() => {
+                                                const colonIndex = module.title.indexOf(':');
+                                                if (colonIndex === -1) return <span className={activeLevel.activeText}>{module.title}</span>;
+                                                return (
+                                                    <>
+                                                        <span className={activeLevel.activeText}>{module.title.slice(0, colonIndex + 1)}</span>
+                                                        <span className="text-slate-200 group-hover:text-white">{module.title.slice(colonIndex + 1)}</span>
+                                                    </>
+                                                );
+                                            })()}
+                                        </span>
+
+                                        {/* Completed count */}
+                                        <span className="text-xs text-slate-500 font-medium tabular-nums shrink-0">
+                                            {modProgress.completed}/{modProgress.total}
+                                        </span>
+                                    </button>
+
+                                    {/* Expandable lesson list */}
+                                    <AnimatePresence initial={false}>
+                                        {!isCollapsed && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: 'auto', opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.25, ease: 'easeInOut' }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="space-y-1 pt-1.5 pb-3 pl-4">
+                                                    {module.lessons.map((lesson) => {
+                                                        const isActive = lessonId === lesson.id;
+                                                        const locked = isLessonLocked(lesson.id);
+                                                        const completed = isLessonCompleted(lesson.id);
+
+                                                        if (locked) {
+                                                            return (
+                                                                <div key={lesson.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] text-slate-500 cursor-not-allowed opacity-75">
+                                                                    <Lock size={17} className="text-red-500 shrink-0" />
+                                                                    {lesson.title}
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        return (
+                                                            <Link
+                                                                key={lesson.id}
+                                                                to={`/learn/${lesson.id}`}
+                                                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] transition-all duration-200 group
+                                                                ${isActive
+                                                                        ? `${activeLevel.activeItemBg} ${activeLevel.activeText} font-medium`
+                                                                        : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                                                                    }`}
+                                                            >
+                                                                {completed ? (
+                                                                    <CheckCircle size={17} className={`${activeLevel.completedIcon} shrink-0`} />
+                                                                ) : isActive ? (
+                                                                    <Book size={17} className={`${activeLevel.activeText} shrink-0`} />
+                                                                ) : (
+                                                                    <Circle size={17} className="opacity-30 group-hover:opacity-100 transition-opacity shrink-0" />
+                                                                )}
+                                                                {lesson.title}
+                                                            </Link>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            );
+                        }))}
                 </div>
 
                 {/* Bottom Navbar */}
@@ -595,7 +682,7 @@ export default function CourseLayout() {
             </motion.aside>
 
             {/* Main Content Area */}
-            <main className="flex-1 h-full overflow-y-auto relative scroll-smooth bg-[#020617] flex flex-col">
+            <main ref={mainRef} className="flex-1 h-full overflow-y-auto relative scroll-smooth bg-[#020617] flex flex-col">
                 {/* Top Header */}
                 <header ref={headerRef} className={`sticky top-0 z-30 flex items-center justify-between py-5 bg-[#020617]/80 backdrop-blur-md border-b border-white/5 transition-all duration-300 ${isSidebarOpen ? 'px-10' : 'pl-[72px] pr-10'}`}>
                     {/* Breadcrumbs */}
@@ -609,81 +696,17 @@ export default function CourseLayout() {
                         )}
                     </div>
 
-                    {/* ═══ Level Switcher ═══ */}
-                    <div className="absolute inset-0 flex items-start justify-center pointer-events-none" style={{ paddingTop: '10px' }}>
-                        <div ref={levelSwitcherRef} className="flex flex-col items-center pointer-events-auto">
-                            {/* Active level icon — hidden until multiple levels unlocked */}
-                            <AnimatePresence>
-                                {Object.values(unlockedLevels).filter(Boolean).length > 1 && (
-                                    <motion.button
-                                        key="level-switcher-btn"
-                                        initial={{ opacity: 0, scale: 0, rotate: -180 }}
-                                        animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                                        exit={{ opacity: 0, scale: 0, rotate: 180 }}
-                                        transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                                        onClick={() => setLevelSwitcherOpen(prev => !prev)}
-                                        whileHover={{ scale: 1.1 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        className={`w-11 h-11 rounded-xl bg-gradient-to-br ${activeLevel.gradient} flex items-center justify-center shadow-lg ${activeLevel.shadow} border ${activeLevel.borderActive} cursor-pointer transition-shadow`}
-                                    >
-                                        <activeLevel.Icon size={20} className="text-white" />
-                                    </motion.button>
-                                )}
-                            </AnimatePresence>
 
-                            {/* Dropdown with other levels — triangle layout */}
-                            <AnimatePresence>
-                                {levelSwitcherOpen && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -8, scale: 0.9 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: -8, scale: 0.9 }}
-                                        transition={{ duration: 0.2, ease: 'easeOut' }}
-                                        className="mt-3 flex items-center gap-5 px-3 py-2.5 rounded-2xl bg-[#0B0F1C]/95 backdrop-blur-md border border-white/10 shadow-2xl shadow-black/40"
-                                    >
-
-                                        {otherLevels.map((level) => {
-                                            const isUnlocked = unlockedLevels[level.key];
-                                            return (
-                                                <motion.button
-                                                    key={level.key}
-                                                    whileHover={isUnlocked ? { scale: 1.1 } : {}}
-                                                    whileTap={isUnlocked ? { scale: 0.95 } : {}}
-                                                    onClick={() => {
-                                                        if (isUnlocked) {
-                                                            setCurrentLevel(level.key);
-                                                            setLevelSwitcherOpen(false);
-                                                            navigate('/learn');
-                                                        }
-                                                    }}
-                                                    className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all relative ${isUnlocked
-                                                        ? `bg-gradient-to-br ${level.gradient} ${level.shadow} shadow-lg ${level.borderActive} cursor-pointer`
-                                                        : 'bg-slate-800/60 border-white/5 opacity-40 cursor-not-allowed'
-                                                        }`}
-                                                    title={isUnlocked ? level.label : `${level.label} (Locked)`}
-                                                >
-                                                    <level.Icon size={18} className={isUnlocked ? 'text-white' : 'text-slate-500'} />
-                                                    {!isUnlocked && (
-                                                        <div className="absolute inset-0 flex items-center justify-center">
-                                                            <Lock size={10} className="text-slate-400" />
-                                                        </div>
-                                                    )}
-                                                </motion.button>
-                                            );
-                                        })}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
-                    </div>
 
                     {/* User Profile - Top Right */}
                     <div className="flex items-center gap-5">
                         <div className="text-right hidden sm:block">
                             <p className="text-[15px] font-bold text-white leading-none">Student Account</p>
-                            <p className="text-xs text-emerald-400 font-medium uppercase tracking-wide mt-1.5">Free Plan</p>
+                            <p className={`text-xs ${activeLevel.textColor} font-medium uppercase tracking-wide mt-1.5`}>
+                                {currentLevel === 'pro' ? 'Pro Plan' : currentLevel === 'expert' ? 'Expert Plan' : 'Free Plan'}
+                            </p>
                         </div>
-                        <div className="w-11 h-11 rounded-full bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center text-sm font-bold shadow-lg shadow-emerald-500/20 border border-white/10 cursor-pointer hover:scale-105 transition-transform">
+                        <div className={`w-11 h-11 rounded-full bg-gradient-to-br ${activeLevel.gradient} flex items-center justify-center text-sm font-bold shadow-lg ${activeLevel.shadow} border border-white/10 cursor-pointer hover:scale-105 transition-transform`}>
                             ME
                         </div>
                     </div>
@@ -700,6 +723,8 @@ export default function CourseLayout() {
                             isLessonCompleted={isLessonCompleted}
                             getModuleProgress={getModuleProgress}
                             onProUnlock={handleProUnlock}
+                            onExpertUnlock={handleExpertUnlock}
+                            onNoobUnlock={handleUnlockNoob}
                             currentLevel={currentLevel}
                             levelContent={levelContent}
                         />
@@ -710,27 +735,100 @@ export default function CourseLayout() {
             {/* ══════════════════════════════════════════════════════════
                 FLYING ROCKET OVERLAY — animated from dashboard to header
                 ══════════════════════════════════════════════════════════ */}
+            {/* ═══ Global Level Switcher (Fixed on top of everything) ═══ */}
+            <div className="fixed top-0 left-1/2 -translate-x-1/2 z-[50] flex justify-center pt-[30px] pointer-events-none">
+                <div className="flex flex-col items-center pointer-events-auto">
+                    {/* Active level icon — hidden until multiple levels unlocked */}
+                    <AnimatePresence>
+                        {Object.values(unlockedLevels).filter(Boolean).length > 1 && (
+                            <motion.button
+                                ref={levelSwitcherRef}
+                                key="level-switcher-btn"
+                                initial={{ opacity: 0, scale: 0, rotate: -180 }}
+                                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                                exit={{ opacity: 0, scale: 0, rotate: 180 }}
+                                transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                                onClick={() => setLevelSwitcherOpen(prev => !prev)}
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.95 }}
+                                className={`w-11 h-11 rounded-xl bg-gradient-to-br ${activeLevel.gradient} flex items-center justify-center shadow-lg ${activeLevel.shadow} border ${activeLevel.borderActive} cursor-pointer transition-shadow`}
+                            >
+                                <activeLevel.Icon size={20} className="text-white" />
+                            </motion.button>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Dropdown with other levels */}
+                    <AnimatePresence>
+                        {levelSwitcherOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -8, scale: 0.9 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -8, scale: 0.9 }}
+                                transition={{ duration: 0.2, ease: 'easeOut' }}
+                                className="mt-3 flex items-center gap-5 px-3 py-2.5 rounded-2xl bg-[#0B0F1C]/95 backdrop-blur-md border border-white/10 shadow-2xl shadow-black/40"
+                            >
+
+                                {otherLevels.map((level) => {
+                                    const isUnlocked = unlockedLevels[level.key];
+                                    return (
+                                        <motion.button
+                                            key={level.key}
+                                            whileHover={isUnlocked ? { scale: 1.1 } : {}}
+                                            whileTap={isUnlocked ? { scale: 0.95 } : {}}
+                                            onClick={() => {
+                                                if (isUnlocked) {
+                                                    // Trigger explosion if switching to a new level
+                                                    if (level.key !== currentLevel) {
+                                                        triggerExplosion(level.key);
+                                                    }
+                                                    setCurrentLevel(level.key);
+                                                    setLevelSwitcherOpen(false);
+                                                    navigate('/learn');
+                                                }
+                                            }}
+                                            className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all relative ${isUnlocked
+                                                ? `bg-gradient-to-br ${level.gradient} ${level.shadow} shadow-lg ${level.borderActive} cursor-pointer`
+                                                : 'bg-slate-800/60 border-white/5 opacity-40 cursor-not-allowed'
+                                                }`}
+                                            title={isUnlocked ? level.label : `${level.label} (Locked)`}
+                                        >
+                                            <level.Icon size={18} className={isUnlocked ? 'text-white' : 'text-slate-500'} />
+                                            {!isUnlocked && (
+                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                    <Lock size={10} className="text-slate-400" />
+                                                </div>
+                                            )}
+                                        </motion.button>
+                                    );
+                                })}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            </div>
+
             <AnimatePresence>
-                {flyingRocket && (
+                {flyingObject && (
                     <>
-                        {/* The flying rocket */}
+                        {/* The flying object */}
                         <motion.div
-                            key="flying-rocket"
+                            key="flying-object"
                             style={{
                                 position: 'fixed',
                                 zIndex: 9999,
                             }}
                             initial={{
-                                left: flyingRocket.startX - 40,
-                                top: flyingRocket.startY - 40,
+                                left: flyingObject.startX - 40,
+                                top: flyingObject.startY - 40,
                                 width: 80,
                                 height: 80,
                                 scale: 1,
                                 opacity: 1,
                             }}
                             animate={{
-                                left: flyingRocket.endX - 20,
-                                top: flyingRocket.endY - 20,
+                                left: flyingObject.endX - 20,
+                                top: flyingObject.endY - 20,
                                 width: 40,
                                 height: 40,
                                 scale: [1, 1.3, 0.6],
@@ -743,8 +841,8 @@ export default function CourseLayout() {
                             }}
                             className="pointer-events-none"
                         >
-                            <div className="w-full h-full rounded-2xl bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center shadow-2xl shadow-emerald-500/50 border border-white/20">
-                                <Rocket size={24} className="text-white" />
+                            <div className={`w-full h-full rounded-2xl bg-gradient-to-br ${flyingObject.type === 'crown' ? 'from-red-500 to-amber-600 shadow-red-500/50' : 'from-emerald-500 to-blue-600 shadow-emerald-500/50'} flex items-center justify-center shadow-2xl border border-white/20`}>
+                                {flyingObject.type === 'crown' ? <Crown size={24} className="text-white" /> : <Rocket size={24} className="text-white" />}
                             </div>
                         </motion.div>
 
@@ -758,16 +856,16 @@ export default function CourseLayout() {
                                     filter: 'blur(1px)',
                                 }}
                                 initial={{
-                                    left: flyingRocket.startX,
-                                    top: flyingRocket.startY,
+                                    left: flyingObject.startX,
+                                    top: flyingObject.startY,
                                     width: 6 + Math.random() * 6,
                                     height: 6 + Math.random() * 6,
                                     opacity: 0.8,
                                     scale: 1,
                                 }}
                                 animate={{
-                                    left: flyingRocket.startX + (Math.random() - 0.5) * 200,
-                                    top: flyingRocket.startY + Math.random() * 150 + 50,
+                                    left: flyingObject.startX + (Math.random() - 0.5) * 200,
+                                    top: flyingObject.startY + Math.random() * 150 + 50,
                                     opacity: 0,
                                     scale: 0,
                                 }}
@@ -776,7 +874,7 @@ export default function CourseLayout() {
                                     delay: i * 0.05,
                                     ease: 'easeOut',
                                 }}
-                                className="pointer-events-none rounded-full bg-emerald-400"
+                                className={`pointer-events-none rounded-full ${flyingObject.type === 'crown' ? 'bg-red-400' : 'bg-emerald-400'}`}
                             />
                         ))}
 
@@ -786,11 +884,64 @@ export default function CourseLayout() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: [0, 0.08, 0] }}
                             transition={{ duration: 0.6, times: [0, 0.1, 1] }}
-                            className="fixed inset-0 bg-emerald-400 pointer-events-none"
+                            className={`fixed inset-0 ${flyingObject.type === 'crown' ? 'bg-red-400' : 'bg-emerald-400'} pointer-events-none`}
                             style={{ zIndex: 9997 }}
                         />
                     </>
                 )}
+            </AnimatePresence>
+
+            {/* Shockwave Effect Overlay - Multi-instance Ripples */}
+            <AnimatePresence>
+                {explosions.map((explosion) => (
+                    <div
+                        key={explosion.id}
+                        className="fixed inset-0 z-[45] pointer-events-none overflow-hidden"
+                    >
+                        {/* Container positioned at origin (the icon) */}
+                        <div
+                            className="absolute"
+                            style={{
+                                left: explosion.x,
+                                top: explosion.y,
+                            }}
+                        >
+                            {/* Ripple 1: Main heavy wave */}
+                            <motion.div
+                                initial={{ width: 0, height: 0, opacity: 0.8, borderWidth: 22 }}
+                                animate={{ width: '250vmax', height: '250vmax', opacity: 0, borderWidth: 0 }}
+                                transition={{ duration: 2, ease: "easeOut" }}
+                                className={`absolute rounded-full border border-${explosion.color}-500/50 backdrop-blur-[2px] -translate-x-1/2 -translate-y-1/2`}
+                            />
+
+                            {/* Ripple 2: Secondary wave */}
+                            <motion.div
+                                initial={{ width: 0, height: 0, opacity: 0.6, borderWidth: 15 }}
+                                animate={{ width: '250vmax', height: '250vmax', opacity: 0, borderWidth: 0 }}
+                                transition={{ duration: 2, ease: "easeOut", delay: 0.2 }}
+                                className={`absolute rounded-full border border-${explosion.color}-500/30 -translate-x-1/2 -translate-y-1/2`}
+                            />
+
+                            {/* Ripple 3: Outer light wave */}
+                            <motion.div
+                                initial={{ width: 0, height: 0, opacity: 0.4, borderWidth: 8 }}
+                                animate={{ width: '250vmax', height: '250vmax', opacity: 0, borderWidth: 0 }}
+                                transition={{ duration: 2, ease: "easeOut", delay: 0.4 }}
+                                onAnimationComplete={() => handleExplosionComplete(explosion.id)}
+                                className={`absolute rounded-full border border-${explosion.color}-400/20 -translate-x-1/2 -translate-y-1/2`}
+                            />
+                        </div>
+
+                        {/* Screen Flash */}
+                        <motion.div
+                            initial={{ opacity: 0.3 }}
+                            animate={{ opacity: 0 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.8, ease: "easeOut" }}
+                            className={`absolute inset-0 bg-${explosion.color}-500/10 mix-blend-screen`}
+                        />
+                    </div>
+                ))}
             </AnimatePresence>
         </div>
     );
