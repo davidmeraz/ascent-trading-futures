@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { TrendingUp, Book, CheckCircle, Circle, Lock, ChevronDown } from 'lucide-react';
+import { TrendingUp, Book, CheckCircle, Circle, Lock, ChevronDown, Rocket, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { COURSE_CONTENT } from '../../data/courseData';
 
 /**
  * Circular progress indicator for each module in the dashboard.
@@ -55,14 +54,69 @@ function DashboardProgressCircle({ percentage, size = 48, strokeWidth = 4 }) {
  * Dashboard view shown at /learn (index route).
  * Extracted from CourseLayout to keep components focused.
  */
-export default function CourseDashboard({ completedLessons = [], progressPercentage = 0, isLessonLocked, isLessonCompleted, getModuleProgress }) {
+export default function CourseDashboard({ completedLessons = [], progressPercentage = 0, isLessonLocked, isLessonCompleted, getModuleProgress, onProUnlock, currentLevel = 'noob', levelContent = {} }) {
     // Dashboard-specific collapse state — all collapsed by default
     const [collapsedModules, setCollapsedModules] = useState(() =>
-        Object.keys(COURSE_CONTENT).reduce((acc, key) => ({ ...acc, [key]: true }), {})
+        Object.keys(levelContent).reduce((acc, key) => ({ ...acc, [key]: true }), {})
     );
+
+    // Hold to unlock state
+    const [unlockProgress, setUnlockProgress] = useState(0);
+    const [proUnlocked, setProUnlocked] = useState(() => {
+        try {
+            return JSON.parse(localStorage.getItem('pro_level_unlocked')) || false;
+        } catch { return false; }
+    });
+    const holdInterval = useRef(null);
+    const startTime = useRef(null);
+    const rocketRef = useRef(null);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => clearInterval(holdInterval.current);
+    }, []);
+
+    // Check if all Noob lessons are completed (used for unlock section)
+    const allLessons = Object.values(levelContent).flatMap(m => m.lessons);
+    const allCompleted = allLessons.length > 0 && allLessons.every(l => completedLessons.includes(l.id));
 
     const toggleModule = (key) => {
         setCollapsedModules(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const startHold = () => {
+        startTime.current = Date.now();
+        clearInterval(holdInterval.current);
+
+        holdInterval.current = setInterval(() => {
+            const elapsedTime = Date.now() - startTime.current;
+            const newProgress = Math.min((elapsedTime / 2000) * 100, 100);
+            setUnlockProgress(newProgress);
+
+            if (newProgress >= 100) {
+                clearInterval(holdInterval.current);
+                handleUnlock();
+            }
+        }, 16);
+    };
+
+    const endHold = () => {
+        clearInterval(holdInterval.current);
+        setUnlockProgress(0);
+    };
+
+    const handleUnlock = () => {
+        setProUnlocked(true);
+        localStorage.setItem('pro_level_unlocked', JSON.stringify(true));
+
+        // Get rocket position and pass it up for the fly animation
+        if (rocketRef.current && onProUnlock) {
+            const rect = rocketRef.current.getBoundingClientRect();
+            onProUnlock({
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2,
+            });
+        }
     };
 
     return (
@@ -78,8 +132,8 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                         <TrendingUp size={64} />
                     </div>
                     <h3 className="text-slate-400 text-sm font-medium uppercase tracking-wider mb-2">Current Level</h3>
-                    <div className="text-3xl font-bold text-white mb-1">Noob Trader</div>
-                    <div className="text-emerald-400 text-xs font-semibold">Phase 1 in progress</div>
+                    <div className="text-3xl font-bold text-white mb-1">{proUnlocked ? 'Pro Trader' : 'Noob Trader'}</div>
+                    <div className="text-emerald-400 text-xs font-semibold">{proUnlocked ? 'Phase 2 unlocked!' : 'Phase 1 in progress'}</div>
                 </div>
 
                 {/* Card 2: Progress */}
@@ -108,7 +162,7 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
             <h2 className="text-xl font-semibold text-white mb-6">Continue Learning</h2>
             {/* Shows lessons grouped by module — each collapsible */}
             <div className="space-y-4">
-                {Object.entries(COURSE_CONTENT).map(([key, module]) => {
+                {Object.entries(levelContent).map(([key, module]) => {
                     const isCollapsed = collapsedModules[key] === true;
                     const modProgress = getModuleProgress ? getModuleProgress(key) : { completed: 0, total: module.lessons.length, percentage: 0 };
 
@@ -197,6 +251,93 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                     );
                 })}
             </div>
+
+            {/* ═══════════════════════════════════════════════════════
+                HOLD TO UNLOCK PRO — appears when all Noob lessons are completed
+                ═══════════════════════════════════════════════════════ */}
+            {currentLevel === 'noob' && allCompleted && (
+                <motion.div
+                    initial={{ opacity: 0, y: 40 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, ease: 'easeOut' }}
+                    className="mt-16 mb-8"
+                >
+                    <div className="relative rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900 via-[#0B0F1C] to-slate-900 overflow-hidden">
+                        {/* Animated background glow */}
+                        <div className="absolute inset-0 overflow-hidden">
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-3xl animate-pulse" />
+                            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
+                            <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
+                        </div>
+
+                        <div className="relative z-10 flex flex-col items-center text-center py-16 px-8">
+                            {/* Badge / Achievement — this is the rocket that flies */}
+                            <motion.div
+                                ref={rocketRef}
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.3 }}
+                                className="mb-6"
+                            >
+                                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center shadow-2xl shadow-emerald-500/30 border border-white/10">
+                                    <Rocket size={36} className="text-white" />
+                                </div>
+                            </motion.div>
+
+                            {/* Hold to Unlock button or Unlocked state */}
+                            {proUnlocked ? (
+                                <motion.div
+                                    initial={{ scale: 0.8, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    className="text-center"
+                                >
+                                    <div className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-bold text-lg shadow-lg shadow-emerald-500/10">
+                                        <CheckCircle size={24} />
+                                        Pro Level Unlocked!
+                                    </div>
+                                    <p className="text-slate-500 text-sm mt-4">The Pro content will be available soon.</p>
+                                </motion.div>
+                            ) : (
+                                <div className="relative">
+                                    {/* Outer glow ring */}
+                                    <div className={`absolute -inset-1 rounded-2xl transition-all duration-300 ${unlockProgress > 0
+                                        ? 'bg-gradient-to-r from-emerald-500/40 to-blue-500/40 blur-md'
+                                        : 'bg-transparent'
+                                        }`} />
+
+                                    <button
+                                        onMouseDown={startHold}
+                                        onMouseUp={endHold}
+                                        onMouseLeave={endHold}
+                                        onTouchStart={startHold}
+                                        onTouchEnd={endHold}
+                                        className="relative w-64 h-16 rounded-2xl bg-gradient-to-r from-emerald-600 to-blue-600 font-bold text-white overflow-hidden select-none group hover:shadow-xl hover:shadow-emerald-500/30 transition-shadow cursor-pointer"
+                                    >
+                                        {/* Progress fill */}
+                                        <div
+                                            className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-blue-400 transition-none"
+                                            style={{ width: `${unlockProgress}%` }}
+                                        />
+
+                                        {/* Shimmer effect */}
+                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity -skew-x-12" />
+
+                                        <span className="relative z-10 flex items-center justify-center gap-2.5 text-base">
+                                            <Rocket size={20} className={unlockProgress > 0 ? 'animate-bounce' : ''} />
+                                            {unlockProgress > 0 ? `${Math.round(unlockProgress)}%` : 'Hold to Unlock Pro'}
+                                        </span>
+                                    </button>
+
+                                    {/* Helper text */}
+                                    <p className="text-slate-600 text-xs mt-4 text-center">
+                                        Hold the button for 2 seconds to unlock
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </motion.div>
+            )}
         </div>
     );
 }
