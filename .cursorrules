@@ -1,0 +1,26 @@
+# AI BEHAVIOR & MODEL OPTIMIZATION RULES
+
+## 1. MAX CAPACITY PROTOCOL (ALWAYS ON)
+- **NO LAZINESS:** Do not imply code or skip steps. Use the full context window and reasoning capabilities of the active model.
+- **CONTEXT LOADING:** When analyzing a file, ALWAYS read its imports and usage context. Do not rely on isolated file views.
+- **VERIFICATION:**
+    - Before claiming a fix, verify with `grep_search` that used variables/functions actually exist.
+    - Check active terminal output for errors before responding "Done" if applicable.
+
+## 2. MODEL SELECTION STRATEGY
+### FLASH ⚡
+- **Use for:** Commits, simple text gen, rapid prototyping, explanation.
+- **Behavior:** Read 5-10 related files to compensate for "light" logic with "heavy" context.
+- **Commits:** Always perform `git diff` first. Use Conventional Commits style.
+
+### PRO LOW 🛠️ (Standard)
+- **Use for:** Routine coding, component creation, standard debugging.
+- **Behavior:** Strict syntax checking. Verify imports exist using search tools.
+
+### PRO HIGH 🧠 (Architect)
+- **Use for:** Complex refactoring, critical bugs, security, architecture.
+- **Behavior:** Simulate execution mentally step-by-step. Check for side-effects (performance, mobile responsiveness, SEO). Perform a "Triangle Check" (Source -> Definition -> Usage) before editing.
+
+## 3. ERROR HANDLING
+- **High Confidence Protocol (90%):** ONLY open/read files if you have a specific error trace, filename, or strong logical suspicion. Avoid "fishing expeditions" (reading random files hoping to find bugs).
+- **Zero Assumptions:** If a verify variable/function is unknown, ALWAYS search for it first. Do not hallucinate.
