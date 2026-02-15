@@ -509,7 +509,7 @@ export default function CourseLayout() {
             {!isSidebarOpen && (
                 <button
                     onClick={() => setSidebarOpen(true)}
-                    className="fixed top-[22px] left-5 z-50 p-2.5 bg-[#0B0F1C] border border-white/10 rounded-xl text-slate-400 hover:text-white hover:border-emerald-500/30 hover:shadow-lg hover:shadow-emerald-500/10 transition-all duration-300"
+                    className={`fixed md:top-5 left-5 z-50 p-2.5 bg-[#0B0F1C] border border-white/10 rounded-xl text-slate-400 hover:text-white hover:border-emerald-500/30 hover:shadow-lg hover:shadow-emerald-500/10 transition-all duration-300 ${isDashboard ? 'top-[18px]' : 'top-[22px]'}`}
                     aria-label="Open sidebar"
                 >
                     <PanelLeft size={20} />
@@ -710,7 +710,7 @@ export default function CourseLayout() {
             {/* Main Content Area */}
             <main ref={mainRef} className="flex-1 h-full overflow-y-auto relative bg-[#020617] flex flex-col">
                 {/* Top Header */}
-                <header ref={headerRef} className={`sticky top-0 z-30 flex items-center justify-between py-5 bg-[#020617]/80 backdrop-blur-md border-b border-white/5 transition-all duration-300 ${isSidebarOpen ? 'px-10' : 'pl-[72px] pr-10'}`}>
+                <header ref={headerRef} className={`sticky top-0 z-30 flex items-center justify-between md:py-5 bg-[#020617]/80 backdrop-blur-md border-b border-white/5 transition-all duration-300 ${isDashboard ? 'py-5' : 'py-8'} ${isSidebarOpen ? 'px-10' : `pl-[72px] ${isDashboard ? 'pr-4 md:pr-10' : 'pr-10'}`}`}>
                     {/* Breadcrumbs */}
                     <div className="text-[15px] text-slate-400 flex items-center gap-2.5">
                         <Link to="/learn" className="hover:text-white transition-colors font-medium">Dashboard</Link>
@@ -724,8 +724,8 @@ export default function CourseLayout() {
 
 
 
-                    {/* User Profile - Top Right */}
-                    <div className="flex items-center gap-5">
+                    {/* User Profile - Top Right - Hidden on mobile when in lesson OR when sidebar is open */}
+                    <div className={`items-center gap-5 ${isSidebarOpen ? 'hidden sm:flex' : (lessonId ? 'hidden sm:flex' : 'flex')} ${isDashboard ? '-mt-1 md:mt-0' : ''}`}>
                         <div className="text-right hidden sm:block">
                             <p className="text-[15px] font-bold text-white leading-none">Student Account</p>
                             <p className={`text-xs ${activeLevel.textColor} font-medium uppercase tracking-wide mt-1.5`}>
@@ -738,7 +738,7 @@ export default function CourseLayout() {
                     </div>
                 </header>
 
-                <div className="flex-1 max-w-6xl mx-auto w-full px-8 md:px-16 py-14">
+                <div className={`flex-1 max-w-6xl mx-auto w-full px-8 md:px-16 ${lessonId ? 'pt-10 pb-14 md:py-14' : 'py-14'}`}>
                     {lessonId ? (
                         <Outlet />
                     ) : (
@@ -762,7 +762,7 @@ export default function CourseLayout() {
                 FLYING ROCKET OVERLAY — animated from dashboard to header
                 ══════════════════════════════════════════════════════════ */}
             {/* ═══ Global Level Switcher (Fixed on top of everything) ═══ */}
-            <div className={`fixed top-0 z-[50] flex justify-center pt-[18px] pointer-events-none transition-all duration-300 ${isSidebarOpen ? 'md:left-[352px] md:right-0 left-0 right-0 opacity-0 md:opacity-100' : 'left-0 right-0'}`}>
+            <div className={`fixed top-0 z-[50] flex justify-center md:pt-[18px] pointer-events-none transition-all duration-300 ${isDashboard ? 'pt-[18px]' : 'pt-[22px]'} ${isSidebarOpen ? 'md:left-[352px] md:right-0 left-0 right-0 opacity-0 md:opacity-100' : 'left-0 right-0'}`}>
                 <div className="flex flex-col items-center pointer-events-auto">
                     {/* Active level icon — Always visible */}
                     <AnimatePresence>
