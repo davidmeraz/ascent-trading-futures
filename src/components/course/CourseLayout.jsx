@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Link, Outlet, useParams, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useParams, useLocation, useNavigate, useMatch } from 'react-router-dom';
 import { Book, Circle, Menu, X, Lock, CheckCircle, Power, LayoutDashboard, Home, PanelLeftClose, PanelLeft, ChevronDown, ChevronRight, Rocket, Sprout, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { COURSE_CONTENT, COURSE_CONTENT_BY_LEVEL } from '../../data/courseData';
@@ -157,10 +157,21 @@ function ModuleProgressCircle({ percentage, size = 32, strokeWidth = 3, fontSize
 
 export default function CourseLayout() {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
-    const { lessonId } = useParams();
+
+    // Check if we are on a lesson route
+    const lessonMatch = useMatch("/learn/:lessonId");
+    const lessonId = lessonMatch?.params?.lessonId;
+
     const location = useLocation();
     const navigate = useNavigate();
     const [completedLessons, setCompletedLessons] = useStorage('completed_lessons', []);
+
+    // Close sidebar on mobile when route changes
+    useEffect(() => {
+        if (window.innerWidth < 768) {
+            setSidebarOpen(false);
+        }
+    }, [location.pathname]);
 
 
     // Collapsible module state for sidebar — all collapsed by default
@@ -468,7 +479,7 @@ export default function CourseLayout() {
     // Scroll to top when lesson or level changes
     useEffect(() => {
         if (mainRef.current) {
-            mainRef.current.scrollTo(0, 0);
+            mainRef.current.scrollTo({ top: 0, behavior: 'instant' });
         }
     }, [lessonId, currentLevel]);
 
@@ -487,10 +498,10 @@ export default function CourseLayout() {
 
             {/* Sidebar Navigation */}
             <motion.aside
-                initial={{ x: -414 }}
-                animate={{ x: isSidebarOpen ? 0 : -414 }}
+                initial={{ x: -352 }}
+                animate={{ x: isSidebarOpen ? 0 : -352 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className={`${isSidebarOpen ? 'fixed md:relative' : 'fixed'} z-40 w-[414px] h-full bg-[#0B0F1C] border-r border-white/5 flex flex-col shrink-0`}
+                className={`${isSidebarOpen ? 'fixed md:relative' : 'fixed'} z-40 w-[352px] h-full bg-[#0B0F1C] border-r border-white/5 flex flex-col shrink-0`}
             >
                 {/* Sidebar Header with Progress + Toggle */}
                 <div className="px-6 py-7 border-b border-white/5">
@@ -579,16 +590,11 @@ export default function CourseLayout() {
                                         </motion.div>
 
                                         {/* Module title — "Module X:" in green, rest in white */}
-                                        <span className="text-sm font-semibold flex-1 truncate transition-colors">
+                                        <span className="text-sm font-semibold flex-1 truncate transition-colors text-slate-200 group-hover:text-white">
                                             {(() => {
                                                 const colonIndex = module.title.indexOf(':');
-                                                if (colonIndex === -1) return <span className={activeLevel.activeText}>{module.title}</span>;
-                                                return (
-                                                    <>
-                                                        <span className={activeLevel.activeText}>{module.title.slice(0, colonIndex + 1)}</span>
-                                                        <span className="text-slate-200 group-hover:text-white">{module.title.slice(colonIndex + 1)}</span>
-                                                    </>
-                                                );
+                                                if (colonIndex === -1) return module.title;
+                                                return module.title.slice(colonIndex + 1).trim();
                                             })()}
                                         </span>
 
@@ -682,7 +688,7 @@ export default function CourseLayout() {
             </motion.aside>
 
             {/* Main Content Area */}
-            <main ref={mainRef} className="flex-1 h-full overflow-y-auto relative scroll-smooth bg-[#020617] flex flex-col">
+            <main ref={mainRef} className="flex-1 h-full overflow-y-auto relative bg-[#020617] flex flex-col">
                 {/* Top Header */}
                 <header ref={headerRef} className={`sticky top-0 z-30 flex items-center justify-between py-5 bg-[#020617]/80 backdrop-blur-md border-b border-white/5 transition-all duration-300 ${isSidebarOpen ? 'px-10' : 'pl-[72px] pr-10'}`}>
                     {/* Breadcrumbs */}
@@ -736,11 +742,11 @@ export default function CourseLayout() {
                 FLYING ROCKET OVERLAY — animated from dashboard to header
                 ══════════════════════════════════════════════════════════ */}
             {/* ═══ Global Level Switcher (Fixed on top of everything) ═══ */}
-            <div className="fixed top-0 left-1/2 -translate-x-1/2 z-[50] flex justify-center pt-[30px] pointer-events-none">
+            <div className={`fixed top-0 z-[50] flex justify-center pt-[18px] pointer-events-none transition-all duration-300 ${isSidebarOpen ? 'md:left-[352px] md:right-0 left-0 right-0 opacity-0 md:opacity-100' : 'left-0 right-0'}`}>
                 <div className="flex flex-col items-center pointer-events-auto">
                     {/* Active level icon — hidden until multiple levels unlocked */}
                     <AnimatePresence>
-                        {Object.values(unlockedLevels).filter(Boolean).length > 1 && (
+                        {!lessonId && Object.values(unlockedLevels).filter(Boolean).length > 1 && (
                             <motion.button
                                 ref={levelSwitcherRef}
                                 key="level-switcher-btn"

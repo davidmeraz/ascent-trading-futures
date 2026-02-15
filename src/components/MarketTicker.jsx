@@ -13,15 +13,18 @@ const TICKER_ITEMS = [
 
 export default function MarketTicker() {
   return (
-    <div className="w-full bg-[#020617] border-y border-white/5 overflow-hidden py-3 relative z-20">
+    <div className="w-full bg-[#020617] border-y border-white/[0.04] overflow-hidden py-3.5 relative z-20">
+      {/* Fade edges */}
+      <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-[#020617] to-transparent z-10 pointer-events-none" />
+      <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-[#020617] to-transparent z-10 pointer-events-none" />
+
       <div className="flex animate-scroll whitespace-nowrap">
-        {/* Render items twice for seamless loop */}
         {[...TICKER_ITEMS, ...TICKER_ITEMS, ...TICKER_ITEMS].map((item, index) => (
-          <div key={index} className="inline-flex items-center space-x-4 px-8 border-r border-white/5 hover:bg-white/5 transition-colors cursor-default">
-            <span className="font-bold text-emerald-400">{item.symbol}</span>
-            <span className="text-slate-400 text-sm hidden sm:inline">{item.name}</span>
-            <span className="font-mono text-white">{item.price}</span>
-            <div className={`flex items-center text-sm ${item.up ? 'text-emerald-500' : 'text-rose-500'}`}>
+          <div key={index} className="inline-flex items-center gap-4 px-8 border-r border-white/[0.04] hover:bg-white/[0.02] transition-colors cursor-default">
+            <span className="font-bold text-emerald-400 text-sm">{item.symbol}</span>
+            <span className="text-slate-500 text-xs hidden sm:inline">{item.name}</span>
+            <span className="font-mono text-white text-sm">{item.price}</span>
+            <div className={`flex items-center text-xs font-medium ${item.up ? 'text-emerald-500' : 'text-rose-500'}`}>
               {item.up ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
               <span>{item.change} ({item.percent})</span>
             </div>
@@ -29,7 +32,6 @@ export default function MarketTicker() {
         ))}
       </div>
 
-      {/* Add custom animation to tailwind config if needed, or use inline style for simplicity */}
       <style>{`
         @keyframes scroll {
           0% { transform: translateX(0); }
