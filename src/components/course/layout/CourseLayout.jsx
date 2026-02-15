@@ -2,9 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, Outlet, useParams, useLocation, useNavigate, useMatch } from 'react-router-dom';
 import { Book, Circle, Menu, X, Lock, CheckCircle, Power, LayoutDashboard, Home, PanelLeftClose, PanelLeft, ChevronDown, ChevronRight, Rocket, Sprout, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { COURSE_CONTENT, COURSE_CONTENT_BY_LEVEL } from '../../data/courseData';
-import { useStorage } from '../../hooks/useStorage';
-import CourseDashboard from './CourseDashboard';
+import { COURSE_CONTENT, COURSE_CONTENT_BY_LEVEL } from '../../../data/courseData';
+import { useStorage } from '../../../hooks/useStorage';
+import CourseDashboard from '../dashboard/CourseDashboard';
 
 // ═══════════════════════════════════════════
 // Level definitions

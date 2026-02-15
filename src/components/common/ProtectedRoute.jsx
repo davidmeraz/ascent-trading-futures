@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom';
-import { getStorageValue } from '../hooks/useStorage';
+import { getStorageValue } from '../../hooks/useStorage';
 
 /**
  * Route guard that redirects to a fallback path

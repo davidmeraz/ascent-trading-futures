@@ -1,7 +1,7 @@
 import { ArrowRight, Play, Shield, TrendingUp, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { getStorageValue } from '../hooks/useStorage';
+import { getStorageValue } from '../../hooks/useStorage';
 
 // Animated grid background
 function GridBackground() {
@@ -55,7 +55,7 @@ function FloatingBadge({ children, delay = 0, className = '' }) {
     );
 }
 
-export default function Hero() {
+export default function HeroSection() {
     const isPurchased = getStorageValue('course_purchased', false);
 
     return (

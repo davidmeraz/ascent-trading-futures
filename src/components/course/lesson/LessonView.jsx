@@ -3,10 +3,10 @@ import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
 import { TrendingUp, Lock, ArrowRight } from 'lucide-react';
-import { COURSE_CONTENT } from '../../data/courseData';
-import { getStorageValue } from '../../hooks/useStorage';
+import { COURSE_CONTENT } from '../../../data/courseData';
+import { getStorageValue } from '../../../hooks/useStorage';
 import QuizComponent from './QuizComponent';
-import PrismaticImage from './PrismaticImage';
+import PrismaticImage from '../ui/PrismaticImage';
 
 /**
  * Custom Markdown renderers — defined outside the component

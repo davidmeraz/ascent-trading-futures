@@ -85,7 +85,7 @@ const ACCENT_STYLES = {
     },
 };
 
-export default function Features() {
+export default function FeaturesSection() {
     return (
         <section className="py-28 bg-[#020617] relative overflow-hidden" id="features">
             {/* Subtle bg glow */}

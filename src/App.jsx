@@ -1,19 +1,25 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import React, { Suspense, lazy } from 'react';
-import Navbar from './components/Navbar';
-import Hero from './components/Hero';
-import MarketTicker from './components/MarketTicker';
-import Features from './components/Features';
-import LearningPath from './components/LearningPath';
-import Footer from './components/Footer';
-import ErrorBoundary from './components/ErrorBoundary';
-import ProtectedRoute from './components/ProtectedRoute';
 import { Loader2 } from 'lucide-react';
 
+// Layout components
+import Navbar from './components/layout/Navbar';
+import Footer from './components/layout/Footer';
+
+// Landing page sections
+import HeroSection from './components/landing/HeroSection';
+import MarketTicker from './components/landing/MarketTicker';
+import FeaturesSection from './components/landing/FeaturesSection';
+import LearningPathSection from './components/landing/LearningPathSection';
+
+// Common / utility components
+import ErrorBoundary from './components/common/ErrorBoundary';
+import ProtectedRoute from './components/common/ProtectedRoute';
+
 // Lazy load heavy components
-const CourseLayout = lazy(() => import('./components/course/CourseLayout'));
-const CourseDashboard = lazy(() => import('./components/course/CourseDashboard'));
-const LessonView = lazy(() => import('./components/course/LessonView'));
+const CourseLayout = lazy(() => import('./components/course/layout/CourseLayout'));
+const CourseDashboard = lazy(() => import('./components/course/dashboard/CourseDashboard'));
+const LessonView = lazy(() => import('./components/course/lesson/LessonView'));
 const PlaceholderPage = lazy(() => import('./components/auth/PlaceholderPage'));
 const EnrollmentSuccess = lazy(() => import('./components/auth/EnrollmentSuccess'));
 
@@ -21,10 +27,10 @@ function LandingPage() {
   return (
     <div className="min-h-screen bg-[#020617] text-white">
       <Navbar />
-      <Hero />
+      <HeroSection />
       <MarketTicker />
-      <Features />
-      <LearningPath />
+      <FeaturesSection />
+      <LearningPathSection />
       <Footer />
     </div>
   );

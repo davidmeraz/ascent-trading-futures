@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
 import { BookOpen, Skull, BrainCircuit, ArrowRight, Lock, Sprout, Rocket, Crown, CheckCircle, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { getStorageValue } from '../hooks/useStorage';
-import { COURSE_CONTENT_BY_LEVEL } from '../data/courseData';
+import { getStorageValue } from '../../hooks/useStorage';
+import { COURSE_CONTENT_BY_LEVEL } from '../../data/courseData';
 
 const STEPS = [
     {
@@ -58,7 +58,7 @@ const STEPS = [
     }
 ];
 
-export default function LearningPath() {
+export default function LearningPathSection() {
     return (
         <section className="py-28 bg-[#020617] relative overflow-hidden" id="learning-path">
             {/* Bg accent */}
