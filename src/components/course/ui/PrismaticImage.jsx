@@ -11,6 +11,7 @@ import { useRef, useCallback, useEffect, useMemo } from 'react';
  */
 
 // Grid configuration
+
 const COLS = 8;
 const ROWS = 5;
 const JITTER = -1;
@@ -45,7 +46,6 @@ export default function PrismaticImage({ src, alt }) {
             }
             points.push(rowPoints);
         }
-
         const shapeData = [];
         for (let r = 0; r < ROWS; r++) {
             for (let c = 0; c < COLS; c++) {
@@ -74,73 +74,76 @@ export default function PrismaticImage({ src, alt }) {
         const cleanupShine = () => {
             if (overlayRef.current) overlayRef.current.style.opacity = '';
             if (glareRef.current) glareRef.current.style.opacity = '';
-            // Zoom out (CSS transition handles the smoothness)
-            if (imgRef.current && !isHovering.current) {
-                imgRef.current.style.transform = 'scale(1)';
+
+            // Return to permanent zoom
+            if (imgRef.current) {
+                imgRef.current.style.transform = 'scale(1.03)';
             }
-            // Border glow off
-            if (borderRef.current && !isHovering.current) {
-                borderRef.current.style.borderColor = '';
-                borderRef.current.style.boxShadow = '';
+            // Return to permanent border glow
+            if (borderRef.current) {
+                borderRef.current.style.borderColor = 'rgba(52, 211, 153, 0.3)';
+                borderRef.current.style.boxShadow = '0 0 20px -5px rgba(52, 211, 153, 0.2)';
             }
         };
 
         const triggerShine = () => {
-            if (isHovering.current) {
-                scheduleNext();
-                return;
-            }
-
             const startT = performance.now();
-            const duration = 3500;
+            const duration = 5000; // Double duration (5s)
+
+            // Randomize direction
+            const paths = [
+                { sX: -50, sY: -50, eX: 150, eY: 150 }, // TL to BR
+                { sX: 150, sY: -50, eX: -50, eY: 150 }, // TR to BL
+                { sX: 50, sY: -50, eX: 50, eY: 150 },   // T to B
+                { sX: -50, sY: 50, eX: 150, eY: 50 },   // L to R
+                { sX: 150, sY: 150, eX: -50, eY: -50 }  // BR to TL
+            ];
+            const path = paths[Math.floor(Math.random() * paths.length)];
 
             // Activate layers
             if (overlayRef.current) overlayRef.current.style.opacity = '1';
             if (glareRef.current) glareRef.current.style.opacity = '1';
 
-            // Zoom IN (CSS transition handles the smoothness — 1s ease-out)
+            // Zoom IN
             if (imgRef.current) {
-                imgRef.current.style.transform = 'scale(1.03)';
+                imgRef.current.style.transform = 'scale(1.06)';
             }
 
             // Border glow ON
             if (borderRef.current) {
-                borderRef.current.style.borderColor = 'rgba(52, 211, 153, 0.5)';
-                borderRef.current.style.boxShadow = '0 0 40px -5px rgba(52, 211, 153, 0.4)';
+                borderRef.current.style.borderColor = 'rgba(52, 211, 153, 0.4)';
+                borderRef.current.style.boxShadow = '0 0 30px -5px rgba(52, 211, 153, 0.3)';
             }
 
             const animateShine = (now) => {
-                if (isHovering.current) {
-                    cleanupShine();
-                    return;
-                }
-
                 const elapsed = now - startT;
                 const progress = Math.min(elapsed / duration, 1);
 
                 // Ease Quartic Out
                 const ease = 1 - Math.pow(1 - progress, 4);
-                const pos = -50 + (ease * 200);
+
+                const curX = path.sX + (path.eX - path.sX) * ease;
+                const curY = path.sY + (path.eY - path.sY) * ease;
 
                 if (overlayRef.current) {
-                    const gradient = `radial-gradient(circle 400px at ${pos}% ${pos}%, black, transparent)`;
+                    const gradient = `radial-gradient(circle 400px at ${curX}% ${curY}%, black, transparent)`;
                     overlayRef.current.style.maskImage = gradient;
                     overlayRef.current.style.webkitMaskImage = gradient;
                 }
 
                 if (wrapperRef.current) {
-                    wrapperRef.current.style.setProperty('--mx', `${pos}%`);
-                    wrapperRef.current.style.setProperty('--my', `${pos}%`);
+                    wrapperRef.current.style.setProperty('--mx', `${curX}%`);
+                    wrapperRef.current.style.setProperty('--my', `${curY}%`);
                 }
 
-                // Fade border glow with progress (peaks at ~40% then fades)
+                // Fade border glow back to base state
                 if (borderRef.current) {
                     const borderIntensity = progress < 0.4
-                        ? (progress / 0.4)           // ramp up
-                        : 1 - ((progress - 0.4) / 0.6); // ramp down
-                    const glow = borderIntensity * 0.5;
+                        ? (progress / 0.4)
+                        : 1 - ((progress - 0.4) / 0.6);
+                    const glow = 0.3 + (borderIntensity * 0.4); // Start from 0.3 base
                     borderRef.current.style.borderColor = `rgba(52, 211, 153, ${glow.toFixed(3)})`;
-                    borderRef.current.style.boxShadow = `0 0 ${(borderIntensity * 40).toFixed(0)}px -5px rgba(52, 211, 153, ${(glow * 0.8).toFixed(3)})`;
+                    borderRef.current.style.boxShadow = `0 0 ${(15 + borderIntensity * 30).toFixed(0)}px -5px rgba(52, 211, 153, ${(glow * 0.8).toFixed(3)})`;
                 }
 
                 if (progress < 1) {
@@ -155,7 +158,7 @@ export default function PrismaticImage({ src, alt }) {
         };
 
         const scheduleNext = () => {
-            const delay = 4000;
+            const delay = 2000;
             timeoutId = setTimeout(triggerShine, delay);
         };
 
@@ -167,78 +170,29 @@ export default function PrismaticImage({ src, alt }) {
         };
     }, []);
 
-    /* ---- Mouse Handlers (prismatic light tracking + hover zoom) ---- */
-    const onMove = useCallback((e) => {
-        const rect = wrapperRef.current?.getBoundingClientRect();
-        if (!rect) return;
-
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        if (overlayRef.current) {
-            const pctX = (x / rect.width) * 100;
-            const pctY = (y / rect.height) * 100;
-            const gradient = `radial-gradient(circle 300px at ${pctX}% ${pctY}%, black, transparent)`;
-            overlayRef.current.style.maskImage = gradient;
-            overlayRef.current.style.webkitMaskImage = gradient;
-        }
-
-        if (wrapperRef.current) {
-            wrapperRef.current.style.setProperty('--mx', `${(x / rect.width) * 100}%`);
-            wrapperRef.current.style.setProperty('--my', `${(y / rect.height) * 100}%`);
-        }
-    }, []);
-
-    const onEnter = useCallback(() => {
-        isHovering.current = true;
-        if (overlayRef.current) overlayRef.current.style.opacity = '';
-        if (glareRef.current) glareRef.current.style.opacity = '';
-        // Zoom in
-        if (imgRef.current) imgRef.current.style.transform = 'scale(1.03)';
-        // Border glow handled by CSS group-hover
-        if (borderRef.current) {
-            borderRef.current.style.borderColor = '';
-            borderRef.current.style.boxShadow = '';
-        }
-    }, []);
-
-    const onLeave = useCallback(() => {
-        isHovering.current = false;
-        // Zoom out
-        if (imgRef.current) imgRef.current.style.transform = 'scale(1)';
-        // Reset border inline styles so CSS takes over
-        if (borderRef.current) {
-            borderRef.current.style.borderColor = '';
-            borderRef.current.style.boxShadow = '';
-        }
-    }, []);
-
     return (
         <div className="my-16 relative z-10">
             <div
                 ref={wrapperRef}
-                className="relative cursor-pointer rounded-2xl group/prism overflow-hidden"
-                onMouseMove={onMove}
-                onMouseEnter={onEnter}
-                onMouseLeave={onLeave}
+                className="relative cursor-default rounded-2xl overflow-hidden"
             >
-                {/* 1. Base Image — CSS zoom (1s ease-out) */}
+                {/* 1. Base Image — Permanent zoom (1.03x) */}
                 <img
                     ref={imgRef}
                     src={src}
                     alt={alt}
                     className="w-full object-cover max-h-[500px] rounded-2xl shadow-xl shadow-black/50 border border-white/5"
                     style={{
-                        transition: 'transform 1s ease-out',
-                        transform: 'scale(1)',
+                        transition: 'transform 2s ease-in-out',
+                        transform: 'scale(1.03)',
                     }}
                     loading="lazy"
                 />
 
-                {/* 2. Prismatic Overlay */}
+                {/* 2. Prismatic Overlay — Only visible during auto-shine */}
                 <div
                     ref={overlayRef}
-                    className="absolute inset-0 rounded-2xl opacity-0 group-hover/prism:opacity-100 transition-opacity duration-300 pointer-events-none"
+                    className="absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-700 pointer-events-none"
                     style={{
                         mixBlendMode: 'overlay',
                         maskImage: 'radial-gradient(circle at 50% 50%, black, transparent)',
@@ -266,29 +220,26 @@ export default function PrismaticImage({ src, alt }) {
                     </svg>
                 </div>
 
-                {/* 3. Cursor Glare */}
+                {/* 3. Auto Glare */}
                 <div
                     ref={glareRef}
-                    className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover/prism:opacity-100 transition-opacity duration-300"
+                    className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 transition-opacity duration-700"
                     style={{
                         background: 'radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.2) 0%, transparent 50%)',
                         mixBlendMode: 'soft-light'
                     }}
                 />
 
-                {/* 4. Neon Border (CSS hover + JS auto-shine sync) */}
+                {/* 4. Neon Border — PERMANENT GLOW (No Hover) */}
                 <div
                     ref={borderRef}
-                    className="absolute inset-0 rounded-2xl pointer-events-none transition-all duration-500
-                        border border-white/10
-                        group-hover/prism:border-emerald-400/60
-                        group-hover/prism:shadow-[0_0_40px_-5px_rgba(52,211,153,0.5)]
-                        group-hover/prism:ring-1 group-hover/prism:ring-emerald-500/40"
+                    className="absolute inset-0 rounded-2xl pointer-events-none transition-all duration-700
+                        border border-emerald-400/30 shadow-[0_0_20px_-5px_rgba(52,211,153,0.2)]"
                 />
             </div>
 
             {alt && (
-                <p className="text-center text-slate-500 text-sm mt-4 italic transition-colors duration-300 group-hover/prism:text-emerald-400">
+                <p className="text-center text-slate-500 text-sm mt-4 italic transition-colors duration-300">
                     {alt}
                 </p>
             )}
