@@ -15,7 +15,7 @@ export default function EnrollmentSuccess() {
 
     useEffect(() => {
         if (coursePurchased) {
-            navigate('/learn');
+            navigate('/learn'); // No animation if just revisiting
         }
     }, [navigate, coursePurchased]);
 
@@ -61,13 +61,13 @@ export default function EnrollmentSuccess() {
             setCoursePurchased(true);
             // Redirect after short delay
             setTimeout(() => {
-                navigate('/learn');
+                navigate('/learn', { state: { showWelcomeAnimation: true } });
             }, 1000);
         }, 2500);
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#020617] overflow-hidden font-sans">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black overflow-hidden font-sans">
             {/* Ambient Background Effects */}
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-blue-600/10 rounded-full blur-[120px] mix-blend-screen" />

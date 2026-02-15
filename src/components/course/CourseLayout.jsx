@@ -223,13 +223,23 @@ export default function CourseLayout() {
     const [expertUnlocked, setExpertUnlocked] = useStorage('expert_level_unlocked', false);
 
     // Level switcher state
-    const [currentLevel, setCurrentLevel] = useStorage('current_level', 'none');
+    const [currentLevel, setCurrentLevel] = useStorage('current_level', 'noob');
+
+    // Safety check: if stuck in 'none' or invalid level, force update to 'noob'
+    useEffect(() => {
+        if (!currentLevel || currentLevel === 'none' || !LEVELS[currentLevel]) {
+            console.warn('Invalid level detected, resetting to noob:', currentLevel);
+            setCurrentLevel('noob');
+        }
+    }, [currentLevel, setCurrentLevel]);
+
     const [levelSwitcherOpen, setLevelSwitcherOpen] = useState(false);
+    const [coursePurchased] = useStorage('course_purchased', false);
+    // location is already defined above
 
     // Determine which levels are unlocked
     const unlockedLevels = {
-        none: true,
-        noob: noobUnlocked,
+        noob: true,
         pro: rocketLanded,
         expert: expertUnlocked,
     };
@@ -245,11 +255,11 @@ export default function CourseLayout() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const activeLevel = LEVELS[currentLevel] || LEVELS.noob;
-    const otherLevels = LEVEL_ORDER.filter(k => k !== currentLevel && k !== 'none').map(k => LEVELS[k]);
+    // Content filtered by current level. Safety fallback to empty object if data missing.
+    const levelContent = (currentLevel === 'none' ? {} : COURSE_CONTENT_BY_LEVEL[currentLevel]) || COURSE_CONTENT_BY_LEVEL.noob || {};
 
-    // Content filtered by current level
-    const levelContent = currentLevel === 'none' ? {} : (COURSE_CONTENT_BY_LEVEL[currentLevel] || COURSE_CONTENT_BY_LEVEL.noob);
+    const activeLevel = LEVELS[currentLevel] || LEVELS.noob || LEVELS.none;
+    const otherLevels = (LEVEL_ORDER || []).filter(k => k !== currentLevel && k !== 'none').map(k => LEVELS[k]);
 
     // ─── TEST: Mark ALL lessons as completed on first load ───
     useEffect(() => {
@@ -417,21 +427,30 @@ export default function CourseLayout() {
     const handleStart = () => {
         setHasStarted(true);
         setSidebarOpen(false);
-        if (!currentLevel || currentLevel === 'noob') {
-            setCurrentLevel('none');
+    };
+
+
+
+    // Trigger welcome animation if passed via navigation state (from EnrollmentSuccess)
+    useEffect(() => {
+        if (location.state?.showWelcomeAnimation) {
+            // Wait for component to mount and switcher button to appear
+            setTimeout(() => {
+                let origin = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+                if (levelSwitcherRef.current) {
+                    const rect = levelSwitcherRef.current.getBoundingClientRect();
+                    origin = {
+                        x: rect.left + rect.width / 2,
+                        y: rect.top + rect.height / 2
+                    };
+                }
+                triggerExplosion('noob', origin);
+            }, 500);
+
+            // Clear state to prevent re-triggering (optional, but good practice if using history replace)
+            window.history.replaceState({}, document.title);
         }
-    };
-
-    const handleUnlockNoob = (origin) => {
-        triggerExplosion('noob', origin);
-
-        // Delay the actual level switch to let the shockwave propagate first
-        setTimeout(() => {
-            setNoobUnlocked(true);
-            setCurrentLevel('noob');
-            navigate('/learn');
-        }, 600);
-    };
+    }, [location]);
 
     const handleExpertUnlock = useCallback((startPos) => {
         if (!headerRef.current) return;
@@ -479,7 +498,8 @@ export default function CourseLayout() {
     // Scroll to top when lesson or level changes
     useEffect(() => {
         if (mainRef.current) {
-            mainRef.current.scrollTo({ top: 0, behavior: 'instant' });
+            mainRef.current.style.scrollBehavior = 'auto';
+            mainRef.current.scrollTop = 0;
         }
     }, [lessonId, currentLevel]);
 
@@ -730,7 +750,7 @@ export default function CourseLayout() {
                             getModuleProgress={getModuleProgress}
                             onProUnlock={handleProUnlock}
                             onExpertUnlock={handleExpertUnlock}
-                            onNoobUnlock={handleUnlockNoob}
+
                             currentLevel={currentLevel}
                             levelContent={levelContent}
                         />
@@ -744,9 +764,9 @@ export default function CourseLayout() {
             {/* ═══ Global Level Switcher (Fixed on top of everything) ═══ */}
             <div className={`fixed top-0 z-[50] flex justify-center pt-[18px] pointer-events-none transition-all duration-300 ${isSidebarOpen ? 'md:left-[352px] md:right-0 left-0 right-0 opacity-0 md:opacity-100' : 'left-0 right-0'}`}>
                 <div className="flex flex-col items-center pointer-events-auto">
-                    {/* Active level icon — hidden until multiple levels unlocked */}
+                    {/* Active level icon — Always visible */}
                     <AnimatePresence>
-                        {!lessonId && Object.values(unlockedLevels).filter(Boolean).length > 1 && (
+                        {!lessonId && (
                             <motion.button
                                 ref={levelSwitcherRef}
                                 key="level-switcher-btn"
@@ -777,6 +797,7 @@ export default function CourseLayout() {
 
                                 {otherLevels.map((level) => {
                                     const isUnlocked = unlockedLevels[level.key];
+                                    if (!isUnlocked) return null; // Hide locked levels to avoid spoilers
                                     return (
                                         <motion.button
                                             key={level.key}
