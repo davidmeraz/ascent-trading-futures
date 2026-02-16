@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { COURSE_CONTENT, COURSE_CONTENT_BY_LEVEL } from '../../../data/courseData';
 import { useStorage } from '../../../hooks/useStorage';
 import CourseDashboard from '../dashboard/CourseDashboard';
+import DebugMenu from '../../common/DebugMenu';
 
 // ═══════════════════════════════════════════
 // Level definitions
@@ -310,21 +311,7 @@ export default function CourseLayout() {
     // Use displayLevel for UI rendering to ensure delayed theme switch in Dashboard
     const levelContent = (displayLevel === 'none' ? {} : COURSE_CONTENT_BY_LEVEL[displayLevel]) || COURSE_CONTENT_BY_LEVEL.noob || {};
 
-    // ─── TEST: Mark ALL lessons as completed on first load ───
-    useEffect(() => {
-        const allLessons = Object.values(COURSE_CONTENT).flatMap(m => m.lessons);
-        const allIds = allLessons.map(l => l.id);
-        const stored = localStorage.getItem('completed_lessons');
-        let current = [];
-        try { current = stored ? JSON.parse(stored) : []; } catch { current = []; }
-        const missing = allIds.filter(id => !current.includes(id));
-        if (missing.length > 0) {
-            const updated = [...new Set([...current, ...allIds])];
-            localStorage.setItem('completed_lessons', JSON.stringify(updated));
-            setCompletedLessons(updated);
-        }
-    }, []);
-    // ─────────────────────────────────────────────────────────
+
 
     // Auto-expand the module containing the active lesson
     useEffect(() => {
@@ -552,6 +539,7 @@ export default function CourseLayout() {
 
     return (
         <div className="flex h-screen bg-[#020617] text-white overflow-hidden font-sans">
+            <DebugMenu />
             {/* Sidebar Toggle Button (visible when sidebar is collapsed) */}
             {!isSidebarOpen && (
                 <button
