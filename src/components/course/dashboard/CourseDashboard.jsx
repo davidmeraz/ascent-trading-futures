@@ -251,14 +251,14 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                     </div>
 
                     {/* Card 2: Progress */}
-                    <div className={`p-6 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/5 relative overflow-hidden group ${theme.borderHover} transition-colors`}>
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <div className={`p-6 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/5 relative overflow-hidden group ${theme.borderHover} transition-all duration-500 hover:shadow-lg hover:shadow-black/20 hover:-translate-y-1`}>
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity duration-500">
                             <Book size={64} />
                         </div>
-                        <h3 className="text-slate-400 text-sm font-medium uppercase tracking-wider mb-2">Course Progress</h3>
+                        <h3 className="text-slate-400 text-sm font-medium uppercase tracking-wider mb-2 transition-colors group-hover:text-slate-300">Course Progress</h3>
                         <div className="text-3xl font-bold text-white mb-1">{progressPercentage}%</div>
-                        <div className="w-full bg-slate-700 h-1.5 rounded-full mt-2 overflow-hidden">
-                            <div className={`${theme.progressBar} h-full rounded-full transition-all duration-1000`} style={{ width: `${progressPercentage}%` }}></div>
+                        <div className="w-full bg-slate-700/50 h-1.5 rounded-full mt-2 overflow-hidden">
+                            <div className={`${theme.progressBar} h-full rounded-full transition-all duration-1000 ease-out`} style={{ width: `${progressPercentage}%` }}></div>
                         </div>
                     </div>
 
@@ -377,25 +377,26 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                         transition={{ duration: 0.8, ease: 'easeOut' }}
                         className="mt-16 mb-8"
                     >
-                        <div className="relative rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900 via-[#051C15] to-slate-900 overflow-hidden">
-                            {/* Animated background glow */}
-                            <div className="absolute inset-0 overflow-hidden">
+                        <div className={`relative rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900/90 via-slate-900/50 to-slate-900/90 overflow-hidden group ${theme.borderHover} transition-all duration-500`}>
+                            {/* Animated background glow - Page Style Match (Emerald) */}
+                            <div className="absolute inset-0 overflow-hidden pointer-events-none">
                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-3xl animate-pulse" />
-                                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
-                                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
+                                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
+                                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/10 to-transparent" />
                             </div>
 
-                            <div className="relative z-10 flex flex-col items-center text-center py-16 px-8">
+                            <div className="relative z-10 flex flex-col items-center text-center py-12 px-8">
                                 {/* Badge / Achievement */}
                                 <motion.div
                                     ref={rocketRef}
                                     initial={{ scale: 0 }}
                                     animate={{ scale: 1 }}
                                     transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.3 }}
-                                    className="mb-6"
+                                    className="mb-8"
                                 >
-                                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center shadow-2xl shadow-emerald-500/30 border border-white/10">
-                                        <Rocket size={36} className="text-white" />
+                                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-900/50 to-slate-900 border border-emerald-500/30 flex items-center justify-center shadow-[0_0_30px_-10px_rgba(16,185,129,0.3)] relative group-hover:shadow-[0_0_50px_-10px_rgba(16,185,129,0.5)] transition-shadow duration-500">
+                                        <div className="absolute inset-0 rounded-full border border-emerald-400/20 animate-[spin_10s_linear_infinite]" />
+                                        <Rocket size={40} className="text-emerald-400 drop-shadow-lg" />
                                     </div>
                                 </motion.div>
 
@@ -406,7 +407,7 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                                         animate={{ scale: 1, opacity: 1 }}
                                         className="text-center"
                                     >
-                                        <div className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-bold text-lg shadow-lg shadow-emerald-500/10">
+                                        <div className="inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold text-lg shadow-lg shadow-emerald-500/5">
                                             <CheckCircle size={24} />
                                             Pro Level Unlocked!
                                         </div>
@@ -416,7 +417,7 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                                     <div className="relative">
                                         {/* Outer glow ring */}
                                         <div className={`absolute -inset-1 rounded-2xl transition-all duration-300 ${unlockProgress > 0
-                                            ? 'bg-gradient-to-r from-emerald-500/40 to-blue-500/40 blur-md'
+                                            ? 'bg-gradient-to-r from-emerald-500/50 to-blue-500/50 blur-md'
                                             : 'bg-transparent'
                                             }`} />
 
@@ -426,26 +427,25 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                                             onMouseLeave={endHold}
                                             onTouchStart={startHold}
                                             onTouchEnd={endHold}
-                                            className="relative w-64 h-16 rounded-2xl bg-gradient-to-r from-emerald-600 to-blue-600 font-bold text-white overflow-hidden select-none group hover:shadow-xl hover:shadow-emerald-500/30 transition-shadow cursor-pointer"
+                                            className="relative w-72 h-14 rounded-xl bg-[#0B1221] border border-emerald-500/30 font-bold text-white overflow-hidden select-none group hover:border-emerald-400/50 transition-colors cursor-pointer"
                                         >
-                                            {/* Progress fill */}
+                                            {/* Progress fill - Gradient to Next Level (Blue) */}
                                             <div
-                                                className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-blue-400 transition-none"
+                                                className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-blue-600 transition-none opacity-90"
                                                 style={{ width: `${unlockProgress}%` }}
                                             />
 
-                                            {/* Shimmer effect */}
-                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity -skew-x-12" />
-
-                                            <span className="relative z-10 flex items-center justify-center gap-2.5 text-base">
-                                                <Rocket size={20} className={unlockProgress > 0 ? 'animate-bounce' : ''} />
-                                                {unlockProgress > 0 ? `${Math.round(unlockProgress)}%` : 'Hold to Unlock Pro'}
+                                            <span className="relative z-10 flex items-center justify-center gap-3 text-[15px] tracking-wide uppercase">
+                                                <Rocket size={18} className={`${unlockProgress > 0 ? 'animate-bounce text-white' : 'text-emerald-500'}`} />
+                                                <span className={unlockProgress > 0 ? 'text-white' : 'text-slate-200'}>
+                                                    {unlockProgress > 0 ? `${Math.round(unlockProgress)}%` : 'Hold to Unlock Pro'}
+                                                </span>
                                             </span>
                                         </button>
 
                                         {/* Helper text */}
-                                        <p className="text-slate-600 text-xs mt-4 text-center">
-                                            Hold the button for 2 seconds to unlock
+                                        <p className="text-slate-500 text-xs mt-4 text-center font-medium opacity-60">
+                                            Hold button for 2 seconds
                                         </p>
                                     </div>
                                 )}
@@ -464,25 +464,26 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                         transition={{ duration: 0.8, ease: 'easeOut' }}
                         className="mt-16 mb-8"
                     >
-                        <div className="relative rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900 via-[#1C0B0B] to-slate-900 overflow-hidden">
-                            {/* Animated background glow */}
-                            <div className="absolute inset-0 overflow-hidden">
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-500/5 rounded-full blur-3xl animate-pulse" />
-                                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/40 to-transparent" />
-                                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
+                        <div className={`relative rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900/90 via-slate-900/50 to-slate-900/90 overflow-hidden group ${theme.borderHover} transition-all duration-500`}>
+                            {/* Animated background glow - Page Style Match (Blue) */}
+                            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-3xl animate-pulse" />
+                                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
+                                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/10 to-transparent" />
                             </div>
 
-                            <div className="relative z-10 flex flex-col items-center text-center py-16 px-8">
+                            <div className="relative z-10 flex flex-col items-center text-center py-12 px-8">
                                 {/* Badge / Achievement */}
                                 <motion.div
                                     ref={crownRef}
                                     initial={{ scale: 0 }}
                                     animate={{ scale: 1 }}
                                     transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.3 }}
-                                    className="mb-6"
+                                    className="mb-8"
                                 >
-                                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-red-500 to-amber-600 flex items-center justify-center shadow-2xl shadow-red-500/30 border border-white/10">
-                                        <Crown size={36} className="text-white" />
+                                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-900/50 to-slate-900 border border-blue-500/30 flex items-center justify-center shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)] relative group-hover:shadow-[0_0_50px_-10px_rgba(59,130,246,0.5)] transition-shadow duration-500">
+                                        <div className="absolute inset-0 rounded-full border border-blue-400/20 animate-[spin_10s_linear_infinite]" />
+                                        <Crown size={40} className="text-blue-400 drop-shadow-lg" />
                                     </div>
                                 </motion.div>
 
@@ -493,7 +494,7 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                                         animate={{ scale: 1, opacity: 1 }}
                                         className="text-center"
                                     >
-                                        <div className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 font-bold text-lg shadow-lg shadow-red-500/10">
+                                        <div className="inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 font-bold text-lg shadow-lg shadow-blue-500/5">
                                             <CheckCircle size={24} />
                                             Expert Level Unlocked!
                                         </div>
@@ -503,7 +504,7 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                                     <div className="relative">
                                         {/* Outer glow ring */}
                                         <div className={`absolute -inset-1 rounded-2xl transition-all duration-300 ${expertUnlockProgress > 0
-                                            ? 'bg-gradient-to-r from-red-500/40 to-amber-500/40 blur-md'
+                                            ? 'bg-gradient-to-r from-blue-500/50 to-red-500/50 blur-md'
                                             : 'bg-transparent'
                                             }`} />
 
@@ -513,26 +514,25 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                                             onMouseLeave={endExpertHold}
                                             onTouchStart={startExpertHold}
                                             onTouchEnd={endExpertHold}
-                                            className="relative w-64 h-16 rounded-2xl bg-gradient-to-r from-red-600 to-amber-600 font-bold text-white overflow-hidden select-none group hover:shadow-xl hover:shadow-red-500/30 transition-shadow cursor-pointer"
+                                            className="relative w-72 h-14 rounded-xl bg-[#0B1221] border border-blue-500/30 font-bold text-white overflow-hidden select-none group hover:border-blue-400/50 transition-colors cursor-pointer"
                                         >
-                                            {/* Progress fill */}
+                                            {/* Progress fill - Gradient to Next Level (Red) */}
                                             <div
-                                                className="absolute inset-0 bg-gradient-to-r from-red-400 to-amber-400 transition-none"
+                                                className="absolute inset-0 bg-gradient-to-r from-blue-600 to-red-600 transition-none opacity-90"
                                                 style={{ width: `${expertUnlockProgress}%` }}
                                             />
 
-                                            {/* Shimmer effect */}
-                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity -skew-x-12" />
-
-                                            <span className="relative z-10 flex items-center justify-center gap-2.5 text-base">
-                                                <Crown size={20} className={expertUnlockProgress > 0 ? 'animate-bounce' : ''} />
-                                                {expertUnlockProgress > 0 ? `${Math.round(expertUnlockProgress)}%` : 'Hold to Unlock Expert'}
+                                            <span className="relative z-10 flex items-center justify-center gap-3 text-[15px] tracking-wide uppercase">
+                                                <Crown size={18} className={`${expertUnlockProgress > 0 ? 'animate-bounce text-white' : 'text-blue-500'}`} />
+                                                <span className={expertUnlockProgress > 0 ? 'text-white' : 'text-slate-200'}>
+                                                    {expertUnlockProgress > 0 ? `${Math.round(expertUnlockProgress)}%` : 'Hold to Unlock Expert'}
+                                                </span>
                                             </span>
                                         </button>
 
                                         {/* Helper text */}
-                                        <p className="text-slate-600 text-xs mt-4 text-center">
-                                            Hold the button for 2 seconds to unlock
+                                        <p className="text-slate-500 text-xs mt-4 text-center font-medium opacity-60">
+                                            Hold button for 2 seconds
                                         </p>
                                     </div>
                                 )}

@@ -12,15 +12,37 @@ import PrismaticImage from '../ui/PrismaticImage';
  * Custom Markdown renderers — defined outside the component
  * to avoid recreating the object on every render.
  */
+// Define theme colors for reference if needed, although mostly handled by Tailwind classes in theme object
+const THEME_COLORS = {
+    noob: { hex: '#34d399', rgb: '52, 211, 153', tw: 'emerald' },
+    pro: { hex: '#60a5fa', rgb: '96, 165, 250', tw: 'blue' },
+    expert: { hex: '#f87171', rgb: '248, 113, 113', tw: 'red' }
+};
+
 export default function LessonView({ currentLevel: propLevel }) {
     const { lessonId } = useParams();
     const [quizPassed, setQuizPassed] = useState(false);
 
     // Get current level from props or storage
     const storageLevel = getStorageValue('current_level', 'noob');
-    const currentLevel = propLevel || storageLevel;
+    const realCurrentLevel = propLevel || storageLevel;
 
-    // Theme configuration
+    // State for the displayed level colors (delayed)
+    const [renderLevel, setRenderLevel] = useState(realCurrentLevel);
+
+    // Initial sync and delayed update
+    useEffect(() => {
+        // If it's the first time or mismatch, wait 0.61s before syncing (matches Layout center delay)
+        if (realCurrentLevel !== renderLevel) {
+            const timer = setTimeout(() => {
+                setRenderLevel(realCurrentLevel);
+            }, 612); // 0.61s delay
+
+            return () => clearTimeout(timer);
+        }
+    }, [realCurrentLevel, renderLevel]);
+
+    // Theme configuration based on RENDER level (delayed)
     const theme = useMemo(() => {
         const colors = {
             noob: {
@@ -57,8 +79,8 @@ export default function LessonView({ currentLevel: propLevel }) {
                 icon: 'text-red-500',
             }
         };
-        return colors[currentLevel] || colors.noob;
-    }, [currentLevel]);
+        return colors[renderLevel] || colors.noob;
+    }, [renderLevel]);
 
     // Dynamic Markdown Components
     const MarkdownComponents = useMemo(() => ({
@@ -76,8 +98,8 @@ export default function LessonView({ currentLevel: propLevel }) {
         ),
         a: ({ ...props }) => <a className={`${theme.primary} hover:underline font-medium`} {...props} />,
         strong: ({ ...props }) => <strong className={`${theme.primary} font-bold`} {...props} />,
-        img: ({ alt, src }) => <PrismaticImage src={src} alt={alt} />,
-    }), [theme]);
+        img: ({ alt, src }) => <PrismaticImage src={src} alt={alt} level={renderLevel} />,
+    }), [theme, renderLevel]);
 
     // Find lesson and navigation data
     const allLessons = useMemo(

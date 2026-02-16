@@ -16,12 +16,34 @@ const COLS = 8;
 const ROWS = 5;
 const JITTER = -1;
 
-export default function PrismaticImage({ src, alt }) {
+const THEME_COLORS = {
+    noob: { hex: '#34d399', rgb: '52, 211, 153', tw: 'emerald-400' },
+    pro: { hex: '#60a5fa', rgb: '96, 165, 250', tw: 'blue-400' },
+    expert: { hex: '#f87171', rgb: '248, 113, 113', tw: 'red-400' }
+};
+
+export default function PrismaticImage({ src, alt, level = 'noob' }) {
     const wrapperRef = useRef(null);
     const overlayRef = useRef(null);
     const glareRef = useRef(null);
     const imgRef = useRef(null);
     const borderRef = useRef(null);
+
+    // Use a ref for active colors to access them inside closures/timeouts without direct dependency loop issues,
+    // although for simple prop updates we can also just use the prop directly.
+    // However, to match the previous logic of stable refs during animations:
+    const activeColors = useRef(THEME_COLORS[level] || THEME_COLORS.noob);
+
+    // Update active colors when level changes
+    useEffect(() => {
+        activeColors.current = THEME_COLORS[level] || THEME_COLORS.noob;
+        // Immediate update for border when not animating shine
+        if (borderRef.current) {
+            const { rgb } = activeColors.current;
+            borderRef.current.style.borderColor = `rgba(${rgb}, 0.3)`;
+            borderRef.current.style.boxShadow = `0 0 20px -5px rgba(${rgb}, 0.2)`;
+        }
+    }, [level]);
 
     const isHovering = useRef(false);
 
@@ -81,8 +103,9 @@ export default function PrismaticImage({ src, alt }) {
             }
             // Return to permanent border glow
             if (borderRef.current) {
-                borderRef.current.style.borderColor = 'rgba(52, 211, 153, 0.3)';
-                borderRef.current.style.boxShadow = '0 0 20px -5px rgba(52, 211, 153, 0.2)';
+                const { rgb } = activeColors.current;
+                borderRef.current.style.borderColor = `rgba(${rgb}, 0.3)`;
+                borderRef.current.style.boxShadow = `0 0 20px -5px rgba(${rgb}, 0.2)`;
             }
         };
 
@@ -111,8 +134,9 @@ export default function PrismaticImage({ src, alt }) {
 
             // Border glow ON
             if (borderRef.current) {
-                borderRef.current.style.borderColor = 'rgba(52, 211, 153, 0.4)';
-                borderRef.current.style.boxShadow = '0 0 30px -5px rgba(52, 211, 153, 0.3)';
+                const { rgb } = activeColors.current;
+                borderRef.current.style.borderColor = `rgba(${rgb}, 0.4)`;
+                borderRef.current.style.boxShadow = `0 0 30px -5px rgba(${rgb}, 0.3)`;
             }
 
             const animateShine = (now) => {
@@ -138,12 +162,13 @@ export default function PrismaticImage({ src, alt }) {
 
                 // Fade border glow back to base state
                 if (borderRef.current) {
+                    const { rgb } = activeColors.current;
                     const borderIntensity = progress < 0.4
                         ? (progress / 0.4)
                         : 1 - ((progress - 0.4) / 0.6);
                     const glow = 0.3 + (borderIntensity * 0.4); // Start from 0.3 base
-                    borderRef.current.style.borderColor = `rgba(52, 211, 153, ${glow.toFixed(3)})`;
-                    borderRef.current.style.boxShadow = `0 0 ${(15 + borderIntensity * 30).toFixed(0)}px -5px rgba(52, 211, 153, ${(glow * 0.8).toFixed(3)})`;
+                    borderRef.current.style.borderColor = `rgba(${rgb}, ${glow.toFixed(3)})`;
+                    borderRef.current.style.boxShadow = `0 0 ${(15 + borderIntensity * 30).toFixed(0)}px -5px rgba(${rgb}, ${(glow * 0.8).toFixed(3)})`;
                 }
 
                 if (progress < 1) {
@@ -233,8 +258,12 @@ export default function PrismaticImage({ src, alt }) {
                 {/* 4. Neon Border — PERMANENT GLOW (No Hover) */}
                 <div
                     ref={borderRef}
-                    className="absolute inset-0 rounded-2xl pointer-events-none transition-all duration-700
-                        border border-emerald-400/30 shadow-[0_0_20px_-5px_rgba(52,211,153,0.2)]"
+                    className="absolute inset-0 rounded-2xl pointer-events-none transition-all duration-700"
+                    style={{
+                        borderWidth: '1px',
+                        borderColor: `rgba(${activeColors.current.rgb}, 0.3)`,
+                        boxShadow: `0 0 20px -5px rgba(${activeColors.current.rgb}, 0.2)`
+                    }}
                 />
             </div>
 

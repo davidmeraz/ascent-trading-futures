@@ -233,9 +233,47 @@ export default function CourseLayout() {
         }
     }, [currentLevel, setCurrentLevel]);
 
-    const [levelSwitcherOpen, setLevelSwitcherOpen] = useState(false);
-    const [coursePurchased] = useStorage('course_purchased', false);
-    // location is already defined above
+    // Delayed display level for animations
+    // We strive for a "shockwave" effect where components change color as the wave hits them.
+    // Instead of a single hard switch, we will stagger the state updates or use CSS transitions.
+    // Here we manage the main content switch to occur when the wave covers the center (approx 0.6s-0.8s).
+    const [displayLevel, setDisplayLevel] = useState(currentLevel);
+
+    useEffect(() => {
+        if (currentLevel !== displayLevel) {
+            // Main content update (Center of screen) -> faster (0.61s)
+            const timer = setTimeout(() => {
+                setDisplayLevel(currentLevel);
+            }, 612);
+            return () => clearTimeout(timer);
+        }
+    }, [currentLevel, displayLevel]);
+
+    // Secondary delay for Sidebar (Edge of screen) -> slower (1.4s)
+    const [sidebarLevel, setSidebarLevel] = useState(currentLevel);
+    useEffect(() => {
+        if (currentLevel !== sidebarLevel) {
+            const timer = setTimeout(() => {
+                setSidebarLevel(currentLevel);
+            }, 1071);
+            return () => clearTimeout(timer);
+        }
+    }, [currentLevel, sidebarLevel]);
+
+    // Animation states for the level switcher button
+    const [buttonOverrideLevel, setButtonOverrideLevel] = useState(null);
+    const [isZooming, setIsZooming] = useState(false);
+
+    // If displayLevel catches up to override, clear override
+    useEffect(() => {
+        if (buttonOverrideLevel && displayLevel === buttonOverrideLevel) {
+            setButtonOverrideLevel(null);
+        }
+    }, [displayLevel, buttonOverrideLevel]);
+
+    const activeLevel = LEVELS[displayLevel] || LEVELS.noob || LEVELS.none;
+    const buttonLevel = buttonOverrideLevel ? LEVELS[buttonOverrideLevel] : activeLevel;
+    const sidebarTheme = LEVELS[sidebarLevel] || LEVELS.noob || LEVELS.none;
 
     // Determine which levels are unlocked
     const unlockedLevels = {
@@ -243,6 +281,17 @@ export default function CourseLayout() {
         pro: rocketLanded,
         expert: expertUnlocked,
     };
+
+    const otherLevels = (LEVEL_ORDER || []).filter(k => k !== displayLevel && k !== 'none').map(k => LEVELS[k]);
+
+    // Check if there are any other unlocked levels to show in the dropdown
+    const hasUnlockableLevels = otherLevels.some(level => unlockedLevels[level.key]);
+
+    const [levelSwitcherOpen, setLevelSwitcherOpen] = useState(false);
+    const [coursePurchased] = useStorage('course_purchased', false);
+    // location is already defined above
+
+
 
     // Close level switcher when clicking outside
     useEffect(() => {
@@ -256,10 +305,10 @@ export default function CourseLayout() {
     }, []);
 
     // Content filtered by current level. Safety fallback to empty object if data missing.
-    const levelContent = (currentLevel === 'none' ? {} : COURSE_CONTENT_BY_LEVEL[currentLevel]) || COURSE_CONTENT_BY_LEVEL.noob || {};
-
-    const activeLevel = LEVELS[currentLevel] || LEVELS.noob || LEVELS.none;
-    const otherLevels = (LEVEL_ORDER || []).filter(k => k !== currentLevel && k !== 'none').map(k => LEVELS[k]);
+    // Use displayLevel for UI rendering to ensure delayed theme switch
+    // Content filtered by current level. Safety fallback to empty object if data missing.
+    // Use displayLevel for UI rendering to ensure delayed theme switch in Dashboard
+    const levelContent = (displayLevel === 'none' ? {} : COURSE_CONTENT_BY_LEVEL[displayLevel]) || COURSE_CONTENT_BY_LEVEL.noob || {};
 
     // ─── TEST: Mark ALL lessons as completed on first load ───
     useEffect(() => {
@@ -378,30 +427,30 @@ export default function CourseLayout() {
             endY,
         });
 
-        // Step 1: Rocket lands → mark Pro as unlocked
+        // Step 1: Rocket lands (1.2s) -> Set Override & Zoom
         setTimeout(() => {
             setFlyingObject(null);
             setRocketLanded(true);
+
+            // Instantly change button to Pro visual and start zoom
+            setButtonOverrideLevel('pro');
+            setIsZooming(true);
         }, 1200);
 
-        // Step 2: Open switcher to show unlocked level
+        // Step 2: Zoom finishes (approx 0.5s later) -> Trigger Explosion & Real Level Change
         setTimeout(() => {
-            setLevelSwitcherOpen(true);
-        }, 1400);
-
-        // Step 3: Trigger explosion and switch level quickly
-        setTimeout(() => {
+            setIsZooming(false);
             triggerExplosion('pro');
-            // Keep menu open for a split second during explosion for better visual continuity
-            setTimeout(() => setLevelSwitcherOpen(false), 300);
 
-            setTimeout(() => {
-                setCurrentLevel('pro');
-                navigate('/learn');
-            }, 600);
-        }, 2200);
+            // Start the global theme transition (which has its own internal delay)
+            setCurrentLevel('pro');
+            navigate('/learn');
 
-    }, []);
+            // Switcher doesn't need to stay open, just ensure it's closed
+            setLevelSwitcherOpen(false);
+        }, 1700);
+
+    }, [setCurrentLevel, navigate]);
 
     const startHold = () => {
         startTime.current = Date.now();
@@ -466,30 +515,28 @@ export default function CourseLayout() {
             endY,
         });
 
-        // Step 1: Crown lands → mark Expert as unlocked
+        // Step 1: Crown lands (1.2s) -> Set Override & Zoom
         setTimeout(() => {
             setFlyingObject(null);
             setExpertUnlocked(true);
+
+            // Instantly change button to Expert visual and start zoom
+            setButtonOverrideLevel('expert');
+            setIsZooming(true);
         }, 1200);
 
-        // Step 2: Open switcher to show unlocked level
+        // Step 2: Zoom finishes (approx 0.5s later) -> Trigger Explosion & Real Level Change
         setTimeout(() => {
-            setLevelSwitcherOpen(true);
-        }, 1400);
-
-        // Step 3: Trigger explosion and switch level quickly
-        setTimeout(() => {
+            setIsZooming(false);
             triggerExplosion('expert');
-            // Keep menu open for a split second during explosion for better visual continuity
-            setTimeout(() => setLevelSwitcherOpen(false), 300);
 
-            setTimeout(() => {
-                setCurrentLevel('expert');
-                navigate('/learn');
-            }, 600);
-        }, 2200);
+            setCurrentLevel('expert');
+            navigate('/learn');
 
-    }, []);
+            setLevelSwitcherOpen(false);
+        }, 1700);
+
+    }, [setCurrentLevel, navigate]);
 
 
 
@@ -516,7 +563,7 @@ export default function CourseLayout() {
                 </button>
             )}
 
-            {/* Sidebar Navigation */}
+            {/* Sidebar Navigation - Uses DELAYED sidebarLevel */}
             <motion.aside
                 initial={{ x: -352 }}
                 animate={{ x: isSidebarOpen ? 0 : -352 }}
@@ -526,8 +573,8 @@ export default function CourseLayout() {
                 {/* Sidebar Header with Progress + Toggle */}
                 <div className="px-6 py-7 border-b border-white/5">
                     <div className="flex items-center justify-between mb-5">
-                        <h2 className={`text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r ${activeLevel.headerGradient}`}>
-                            {activeLevel.name}
+                        <h2 className={`text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r ${sidebarTheme.headerGradient} transition-all duration-500`}>
+                            {sidebarTheme.name}
                         </h2>
 
                         {/* Collapse Sidebar Button */}
@@ -567,7 +614,7 @@ export default function CourseLayout() {
                                     strokeDasharray={2 * Math.PI * 22}
                                     strokeDashoffset={2 * Math.PI * 22 - (progressPercentage / 100) * 2 * Math.PI * 22}
                                     strokeLinecap="round"
-                                    className={`${activeLevel.progressCircle} transition-all duration-1000 ease-out`}
+                                    className={`${sidebarTheme.progressCircle} transition-all duration-1000 ease-out`}
                                 />
                             </svg>
                             <span className="absolute text-xs font-bold text-white">
@@ -594,9 +641,9 @@ export default function CourseLayout() {
                                     {/* Module Header — clickable for collapse */}
                                     <button
                                         onClick={() => toggleSidebarModule(key)}
-                                        className={`w-full flex items-center gap-3 px-4 py-3.5 text-left rounded-xl transition-all duration-200 group
+                                        className={`w-full flex items-center gap-3 px-4 py-3.5 text-left rounded-xl transition-all duration-500 group
                                         ${hasActiveLesson
-                                                ? `${activeLevel.activeBg} border ${activeLevel.activeBorder}`
+                                                ? `${sidebarTheme.activeBg} border ${sidebarTheme.activeBorder}`
                                                 : 'hover:bg-white/5 border border-transparent'
                                             }`}
                                     >
@@ -655,14 +702,14 @@ export default function CourseLayout() {
                                                                 to={`/learn/${lesson.id}`}
                                                                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] transition-all duration-200 group
                                                                 ${isActive
-                                                                        ? `${activeLevel.activeItemBg} ${activeLevel.activeText} font-medium`
+                                                                        ? `${sidebarTheme.activeItemBg} ${sidebarTheme.activeText} font-medium`
                                                                         : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
                                                                     }`}
                                                             >
                                                                 {completed ? (
-                                                                    <CheckCircle size={17} className={`${activeLevel.completedIcon} shrink-0`} />
+                                                                    <CheckCircle size={17} className={`${sidebarTheme.completedIcon} shrink-0`} />
                                                                 ) : isActive ? (
-                                                                    <Book size={17} className={`${activeLevel.activeText} shrink-0`} />
+                                                                    <Book size={17} className={`${sidebarTheme.activeText} shrink-0`} />
                                                                 ) : (
                                                                     <Circle size={17} className="opacity-30 group-hover:opacity-100 transition-opacity shrink-0" />
                                                                 )}
@@ -682,14 +729,14 @@ export default function CourseLayout() {
                 {/* Bottom Navbar */}
                 <div className="absolute bottom-0 left-0 right-0 bg-[#0B0F1C]/95 backdrop-blur-xl border-t border-white/5">
                     {/* Gradient accent line at top */}
-                    <div className={`absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent ${activeLevel.navbarAccent} to-transparent`} />
+                    <div className={`absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent ${sidebarTheme.navbarAccent} to-transparent transition-all duration-500`} />
 
                     <div className="flex items-center gap-2 p-4">
                         <Link
                             to="/learn"
                             className={`flex-1 flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300
                                 ${isDashboard
-                                    ? `${activeLevel.navbarActiveBg} ${activeLevel.navbarActiveText} shadow-lg ${activeLevel.navbarActiveShadow} border ${activeLevel.navbarActiveBorder}`
+                                    ? `${sidebarTheme.navbarActiveBg} ${sidebarTheme.navbarActiveText} shadow-lg ${sidebarTheme.navbarActiveShadow} border ${sidebarTheme.navbarActiveBorder}`
                                     : 'text-slate-500 hover:text-slate-200 hover:bg-white/5 border border-transparent'
                                 }`}
                         >
@@ -729,7 +776,7 @@ export default function CourseLayout() {
                         <div className="text-right hidden sm:block">
                             <p className="text-[15px] font-bold text-white leading-none">Student Account</p>
                             <p className={`text-xs ${activeLevel.textColor} font-medium uppercase tracking-wide mt-1.5`}>
-                                {currentLevel === 'pro' ? 'Pro Plan' : currentLevel === 'expert' ? 'Expert Plan' : 'Free Plan'}
+                                {displayLevel === 'pro' ? 'Pro Plan' : displayLevel === 'expert' ? 'Expert Plan' : 'Free Plan'}
                             </p>
                         </div>
                         <div className={`w-11 h-11 rounded-full bg-gradient-to-br ${activeLevel.gradient} flex items-center justify-center text-sm font-bold shadow-lg ${activeLevel.shadow} border border-white/10 cursor-pointer hover:scale-105 transition-transform`}>
@@ -740,7 +787,7 @@ export default function CourseLayout() {
 
                 <div className={`flex-1 max-w-6xl mx-auto w-full px-8 md:px-16 ${lessonId ? 'pt-10 pb-14 md:py-14' : 'py-14'}`}>
                     {lessonId ? (
-                        <Outlet />
+                        <Outlet context={{ currentLevel: displayLevel }} />
                     ) : (
                         <CourseDashboard
                             completedLessons={completedLessons}
@@ -751,7 +798,7 @@ export default function CourseLayout() {
                             onProUnlock={handleProUnlock}
                             onExpertUnlock={handleExpertUnlock}
 
-                            currentLevel={currentLevel}
+                            currentLevel={displayLevel}
                             levelContent={levelContent}
                         />
                     )}
@@ -770,23 +817,32 @@ export default function CourseLayout() {
                             <motion.button
                                 ref={levelSwitcherRef}
                                 key="level-switcher-btn"
+                                disabled={isZooming || !hasUnlockableLevels}
                                 initial={{ opacity: 0, scale: 0, rotate: -180 }}
-                                animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                                exit={{ opacity: 0, scale: 0, rotate: 180 }}
-                                transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                                onClick={() => setLevelSwitcherOpen(prev => !prev)}
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.95 }}
-                                className={`w-11 h-11 rounded-xl bg-gradient-to-br ${activeLevel.gradient} flex items-center justify-center shadow-lg ${activeLevel.shadow} border ${activeLevel.borderActive} cursor-pointer transition-shadow`}
+                                animate={{
+                                    opacity: 1,
+                                    scale: isZooming ? [1, 1.3, 1] : 1, // Zoom bounce effect
+                                    rotate: 0
+                                }}
+                                transition={{
+                                    type: 'spring',
+                                    stiffness: 260,
+                                    damping: 20,
+                                    scale: { duration: 0.5, ease: "easeInOut" } // Smooth zoom
+                                }}
+                                onClick={() => !isZooming && hasUnlockableLevels && setLevelSwitcherOpen(prev => !prev)}
+                                whileHover={(!isZooming && hasUnlockableLevels) ? { scale: 1.1 } : {}}
+                                whileTap={(!isZooming && hasUnlockableLevels) ? { scale: 0.95 } : {}}
+                                className={`w-11 h-11 rounded-xl bg-gradient-to-br ${buttonLevel.gradient} flex items-center justify-center shadow-lg ${buttonLevel.shadow} border ${buttonLevel.borderActive} ${(isZooming || !hasUnlockableLevels) ? 'cursor-default' : 'cursor-pointer'} transition-shadow`}
                             >
-                                <activeLevel.Icon size={20} className="text-white" />
+                                <buttonLevel.Icon size={20} className="text-white" />
                             </motion.button>
                         )}
                     </AnimatePresence>
 
                     {/* Dropdown with other levels */}
                     <AnimatePresence>
-                        {levelSwitcherOpen && (
+                        {levelSwitcherOpen && hasUnlockableLevels && (
                             <motion.div
                                 initial={{ opacity: 0, y: -8, scale: 0.9 }}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -805,13 +861,31 @@ export default function CourseLayout() {
                                             whileTap={isUnlocked ? { scale: 0.95 } : {}}
                                             onClick={() => {
                                                 if (isUnlocked) {
-                                                    // Trigger explosion if switching to a new level
-                                                    if (level.key !== currentLevel) {
-                                                        triggerExplosion(level.key);
-                                                    }
-                                                    setCurrentLevel(level.key);
+                                                    // Close dropdown immediately
                                                     setLevelSwitcherOpen(false);
-                                                    navigate('/learn');
+
+                                                    // If switching to a new level, run the animation sequence
+                                                    if (level.key !== currentLevel) {
+                                                        // 1. Visually update button immediately to new level
+                                                        setButtonOverrideLevel(level.key);
+
+                                                        // 2. Start Zoom Animation
+                                                        setIsZooming(true);
+
+                                                        // 3. Wait for zoom (approx 500ms) then Explode & Switch
+                                                        setTimeout(() => {
+                                                            setIsZooming(false);
+                                                            triggerExplosion(level.key);
+
+                                                            // Set actual level state
+                                                            setCurrentLevel(level.key);
+                                                            navigate('/learn');
+                                                        }, 500);
+                                                    } else {
+                                                        // Already on this level
+                                                        setCurrentLevel(level.key);
+                                                        navigate('/learn');
+                                                    }
                                                 }
                                             }}
                                             className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all relative ${isUnlocked
