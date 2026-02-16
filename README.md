@@ -2,7 +2,7 @@
 
 A premium educational platform designed to take traders from beginner to expert in the futures market.
 
-![Project Banner](public/banner-placeholder.png) 
+![Project Banner](public/Banner.jpg) 
 *(Note: You can add a screenshot here later)*
 
 ## ✨ Key Features
