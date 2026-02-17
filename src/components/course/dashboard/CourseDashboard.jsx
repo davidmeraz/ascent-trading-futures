@@ -59,6 +59,7 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
     const [collapsedModules, setCollapsedModules] = useState(() =>
         levelContent ? Object.keys(levelContent).reduce((acc, key) => ({ ...acc, [key]: true }), {}) : {}
     );
+    const [selectedModule, setSelectedModule] = useState(null);
 
     if (!levelContent || Object.keys(levelContent).length === 0) {
         return <div className="flex h-full items-center justify-center text-slate-500">Loading modules for level: {currentLevel}...</div>;
@@ -275,97 +276,171 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
 
                 <h2 className="text-xl font-semibold text-white mb-6">Continue Learning</h2>
                 {/* Shows lessons grouped by module — each collapsible */}
-                <div className="space-y-4">
+                {/* Grid layout for modules */}
+                {/* Grid layout for modules */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
                     {Object.entries(levelContent).map(([key, module]) => {
-                        const isCollapsed = collapsedModules[key] === true;
                         const modProgress = getModuleProgress ? getModuleProgress(key) : { completed: 0, total: module.lessons.length, percentage: 0 };
 
                         return (
-                            <div key={key} className="bg-slate-900/50 border border-white/5 rounded-xl overflow-hidden transition-all duration-300 hover:border-white/10">
-                                {/* Module Header — clickable */}
-                                <button
-                                    onClick={() => toggleModule(key)}
-                                    className="w-full flex items-center justify-between p-5 text-left group transition-colors hover:bg-white/[0.02]"
-                                >
-                                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                                        {/* Chevron */}
-                                        <motion.div
-                                            animate={{ rotate: isCollapsed ? -90 : 0 }}
-                                            transition={{ duration: 0.2 }}
-                                            className="text-slate-500 shrink-0"
-                                        >
-                                            <ChevronDown size={18} />
-                                        </motion.div>
+                            <div key={key} className={`flex flex-col bg-slate-900/40 border border-white/5 rounded-2xl overflow-hidden transition-all duration-300 ${theme.borderHover} group`}>
 
-                                        <div className="min-w-0 flex-1">
-                                            <h3 className={`${theme.primary} font-bold uppercase text-xs tracking-widest transition-colors opacity-90 group-hover:opacity-100`}>
+                                {/* Module Card Header (Always Visible) - Now opens modal */}
+                                <div
+                                    onClick={() => setSelectedModule(key)}
+                                    className="p-6 cursor-pointer relative overflow-hidden flex-1 flex flex-col justify-between"
+                                >
+                                    {/* Background decorative gradient */}
+                                    <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${theme.shimmer} blur-2xl rounded-full -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+
+                                    <div className="flex items-start justify-between relative z-10 mb-4">
+                                        <div className="flex-1 pr-4">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border ${theme.badgeBg} ${theme.badgeText} border-white/5`}>
+                                                    Module {key.split('-').pop()}
+                                                </span>
+                                                {modProgress.percentage === 100 && (
+                                                    <span className="text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
+                                                        <CheckCircle size={10} /> Completed
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <h3 className="text-xl font-bold text-white mb-2 leading-tight group-hover:text-slate-100 transition-colors">
                                                 {module.title}
                                             </h3>
-                                            {!isCollapsed && (
-                                                <p className="text-slate-500 text-xs mt-1">
-                                                    {modProgress.completed} of {modProgress.total} lessons completed
-                                                </p>
-                                            )}
                                         </div>
-                                    </div>
 
-                                    {/* Progress circle — only visible when collapsed */}
-                                    {isCollapsed && (
-                                        <div className="shrink-0">
+                                        {/* Progress Circle visual */}
+                                        <div className="shrink-0 pt-1">
                                             <DashboardProgressCircle
                                                 percentage={modProgress.percentage}
-                                                size={52}
-                                                strokeWidth={4}
+                                                size={60}
+                                                strokeWidth={5}
                                                 colorClass={theme.primary}
                                             />
                                         </div>
-                                    )}
-                                </button>
+                                    </div>
 
-                                {/* Collapsible lesson list */}
-                                <AnimatePresence initial={false}>
-                                    {!isCollapsed && (
-                                        <motion.div
-                                            initial={{ height: 0, opacity: 0 }}
-                                            animate={{ height: 'auto', opacity: 1 }}
-                                            exit={{ height: 0, opacity: 0 }}
-                                            transition={{ duration: 0.3, ease: 'easeInOut' }}
-                                            className="overflow-hidden"
-                                        >
-                                            <div className="grid gap-3 px-5 pb-5">
-                                                {module.lessons.map(lesson => (
-                                                    <Link
-                                                        key={lesson.id}
-                                                        to={`/learn/${lesson.id}`}
-                                                        className={`flex items-center justify-between p-4 rounded-lg border transition-all ${isLessonCompleted(lesson.id)
-                                                            ? `${theme.badgeBg} ${theme.primary} border-transparent`
-                                                            : isLessonLocked(lesson.id)
-                                                                ? 'bg-red-500/5 border-red-500/10 text-slate-500 cursor-not-allowed pointer-events-none'
-                                                                : `bg-slate-800 border-white/10 text-white ${theme.borderHover} hover:bg-slate-800/80`
-                                                            }`}
-                                                    >
-                                                        <span className="flex items-center gap-3">
-                                                            {isLessonCompleted(lesson.id) ? (
-                                                                <CheckCircle size={18} className={theme.icon} />
-                                                            ) : isLessonLocked(lesson.id) ? (
-                                                                <Lock size={18} className="text-red-500" />
-                                                            ) : (
-                                                                <Circle size={18} className="text-slate-400" />
-                                                            )}
-                                                            {lesson.title}
-                                                        </span>
-                                                        {isLessonCompleted(lesson.id) && <span className={`text-xs ${theme.primary} font-bold px-2 py-1 ${theme.badgeBg} rounded`}>COMPLETED</span>}
-                                                        {isLessonLocked(lesson.id) && <span className="text-xs text-red-500 font-bold px-2 py-1 bg-red-500/10 rounded">LOCKED</span>}
-                                                    </Link>
-                                                ))}
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
+                                    <div className="relative z-10 mt-auto">
+                                        <div className="flex items-center gap-2 text-xs text-slate-400 font-medium mb-3">
+                                            <Book size={14} className={theme.icon} />
+                                            {modProgress.completed}/{modProgress.total} Lessons
+                                        </div>
+
+                                        <button className={`w-full py-2.5 rounded-lg bg-white/5 border border-white/5 text-xs text-slate-300 font-bold uppercase tracking-wider transition-all hover:bg-white/10 group-active:scale-[0.98] flex items-center justify-center gap-2`}>
+                                            Explore Module <ChevronDown size={14} className="-rotate-90" />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         );
                     })}
                 </div>
+
+                {/* Sub-menu Modal for Lessons Grid */}
+                <AnimatePresence>
+                    {selectedModule && levelContent[selectedModule] && (
+                        <>
+                            {/* Backdrop */}
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setSelectedModule(null)}
+                                className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50"
+                            />
+
+                            {/* Modal Content */}
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                                onClick={(e) => {
+                                    if (e.target === e.currentTarget) setSelectedModule(null);
+                                }}
+                            >
+                                <div className="bg-[#0B0F1C] border border-white/10 w-full max-w-4xl max-h-[85vh] rounded-2xl shadow-2xl flex flex-col relative overflow-hidden">
+
+                                    {/* Modal Header */}
+                                    <div className="p-6 border-b border-white/5 flex items-start justify-between bg-slate-900/50">
+                                        <div>
+                                            <h2 className="text-2xl font-bold text-white mb-1">
+                                                {levelContent[selectedModule].title}
+                                            </h2>
+                                            <p className="text-slate-400 text-sm">Select a lesson to begin learning.</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setSelectedModule(null)}
+                                            className="p-2 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                                        </button>
+                                    </div>
+
+                                    {/* Modal Body - Grid of Lessons */}
+                                    <div className="p-6 overflow-y-auto">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                            {levelContent[selectedModule].lessons.map((lesson, index) => (
+                                                <Link
+                                                    key={lesson.id}
+                                                    to={`/learn/${lesson.id}`}
+                                                    onClick={() => setSelectedModule(null)} // Close on select? or keep open? Usually close.
+                                                    className={`
+                                                        relative group flex flex-col p-5 rounded-xl border transition-all duration-300 h-full
+                                                        ${isLessonCompleted(lesson.id)
+                                                            ? `${theme.badgeBg} border-emerald-500/20 hover:border-emerald-500/40`
+                                                            : isLessonLocked(lesson.id)
+                                                                ? 'bg-slate-900/20 border-white/5 opacity-50 cursor-not-allowed grayscale'
+                                                                : `bg-slate-800/40 border-white/10 ${theme.borderHover} hover:bg-slate-800 hover:-translate-y-1 hover:shadow-xl`
+                                                        }
+                                                    `}
+                                                    style={isLessonLocked(lesson.id) ? { pointerEvents: 'none' } : {}}
+                                                >
+                                                    {/* Top status line */}
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <span className={`text-xs font-bold uppercase tracking-wider opacity-60 ${isLessonCompleted(lesson.id) ? 'text-emerald-400' : 'text-slate-400'}`}>
+                                                            Lesson {index + 1}
+                                                        </span>
+                                                        {isLessonCompleted(lesson.id) ? (
+                                                            <div className="bg-emerald-500/20 p-1.5 rounded-full">
+                                                                <CheckCircle size={14} className="text-emerald-400" />
+                                                            </div>
+                                                        ) : isLessonLocked(lesson.id) ? (
+                                                            <Lock size={14} className="text-slate-600" />
+                                                        ) : (
+                                                            <div className={`p-1.5 rounded-full bg-white/5 text-slate-400 group-hover:text-${theme.color}-400 transition-colors`}>
+                                                                <Circle size={14} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Title */}
+                                                    <h3 className={`text-sm font-bold mb-2 leading-snug flex-1 ${isLessonCompleted(lesson.id) ? 'text-emerald-100' :
+                                                        isLessonLocked(lesson.id) ? 'text-slate-500' : 'text-slate-200 group-hover:text-white'
+                                                        }`}>
+                                                        {lesson.title}
+                                                    </h3>
+
+                                                    {/* Action Line (only active/completed) */}
+                                                    {!isLessonLocked(lesson.id) && (
+                                                        <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-medium">
+                                                            <span className={isLessonCompleted(lesson.id) ? 'text-emerald-400' : 'text-slate-400 group-hover:text-white transition-colors'}>
+                                                                {isLessonCompleted(lesson.id) ? 'Review Lesson' : 'Start Lesson'}
+                                                            </span>
+                                                            <ChevronDown size={14} className={`-rotate-90 transition-transform duration-300 group-hover:translate-x-1 ${isLessonCompleted(lesson.id) ? 'text-emerald-400' : theme.primary}`} />
+                                                        </div>
+                                                    )}
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>
 
                 {/* ═══════════════════════════════════════════════════════
             HOLD TO UNLOCK PRO — appears when all Noob lessons are completed

@@ -25,6 +25,15 @@ export default function DebugMenu() {
     const [proUnlocked, setProUnlocked] = useStorage('pro_level_unlocked', false);
     const [expertUnlocked, setExpertUnlocked] = useStorage('expert_level_unlocked', false);
 
+    // Terminal State
+    const [input, setInput] = useState('');
+    const [logs, setLogs] = useState(['> ROBCO INDUSTRIES (TM) TERMILINK PROTOCOL', '> ENTER PASSWORD NOW', '> **********', '> ACCESS GRANTED', '> WELCOME TO DEBUG CONSOLE']);
+    const inputRef = useRef(null);
+
+    const addLog = (msg) => {
+        setLogs(prev => [...prev.slice(-10), `> ${msg}`]);
+    };
+
     // Close when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -36,9 +45,24 @@ export default function DebugMenu() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Toggle with TAB key
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault(); // Prevent focus switching
+                setIsOpen(prev => !prev);
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     // 1. Restaurar Nivel (Reset current level progress)
     const handleResetLevel = () => {
-        if (!currentLevel || currentLevel === 'none') return;
+        if (!currentLevel || currentLevel === 'none') {
+            alert("No level selected to reset.");
+            return;
+        }
 
         const levelData = COURSE_CONTENT_BY_LEVEL[currentLevel];
         if (!levelData) return;
@@ -51,23 +75,18 @@ export default function DebugMenu() {
         const newCompleted = completedLessons.filter(id => !levelLessonIds.includes(id));
         setCompletedLessons(newCompleted); // useStorage hook handles the event dispatch
 
-        // Also ensure the level itself keeps its unlock status? 
-        // "Restaurar nivel" usually implies resetting progress within it.
-        // We don't lock the level itself, just the lessons.
+        console.log(`[Debug] Reset level: ${currentLevel}`);
         setIsOpen(false);
-        window.location.reload(); // Refresh to ensure all states sync perfectly
+        window.location.reload();
     };
 
     // 2. Reiniciar Curso (Full Reset)
     const handleRestartCourse = () => {
         if (confirm('¿Estás seguro de que quieres reiniciar todo el progreso?')) {
             localStorage.clear();
-            // We might want to keep some non-course settings? 
-            // But "Reiniciar curso" implies a fresh start.
-            // Let's explicitly reset known keys to be safe
             setCompletedLessons([]);
             setCurrentLevel('noob');
-            setNoobUnlocked(true); // Noob is always unlocked? Check CourseLayout logic.
+            setNoobUnlocked(true);
             setProUnlocked(false);
             setExpertUnlocked(false);
 
@@ -82,179 +101,141 @@ export default function DebugMenu() {
             .flatMap(module => module.lessons.map(l => l.id));
 
         setCompletedLessons(allLessonIds);
-        // Do NOT unlock levels (pro/expert) automatically
-
+        console.log("[Debug] All lessons marked completed.");
         setIsOpen(false);
         window.location.reload();
     };
 
-    // 4. Dashboard
-    const handleDashboard = () => {
-        navigate('/learn');
-        setIsOpen(false);
+    const handleCommand = (e) => {
+        if (e.key === 'Enter') {
+            const cmd = input.trim().toLowerCase();
+            addLog(input);
+            setInput('');
+
+            switch (cmd) {
+                case 'help':
+                    addLog('AVAILABLE COMMANDS:');
+                    addLog('  help       - Show list of commands');
+                    addLog('  clear      - Clear terminal logs');
+                    addLog('  reset level- Reset current level progress');
+                    addLog('  reset all  - Hard reset all progress');
+                    addLog('  complete   - Complete all lessons');
+                    addLog('  toggle pro - Toggle Pro Level');
+                    addLog('  toggle exp - Toggle Expert Level');
+                    addLog('  exit       - Close terminal');
+                    break;
+                case 'clear':
+                    setLogs([]);
+                    break;
+                case 'exit':
+                    setIsOpen(false);
+                    break;
+                case 'reset level':
+                    handleResetLevel();
+                    addLog('EXECUTING LEVEL RESET...');
+                    break;
+                case 'reset all':
+                    handleRestartCourse();
+                    addLog('INITIATING FACTORY RESET...');
+                    break;
+                case 'complete':
+                    handleCompleteCourse();
+                    addLog('OVERRIDING COMPLETION STATUS...');
+                    break;
+                case 'toggle pro':
+                    setProUnlocked(!proUnlocked);
+                    addLog(`PRO LEVEL STATUS: ${!proUnlocked ? 'UNLOCKED' : 'LOCKED'}`);
+                    break;
+                case 'toggle exp':
+                    setExpertUnlocked(!expertUnlocked);
+                    addLog(`EXPERT LEVEL STATUS: ${!expertUnlocked ? 'UNLOCKED' : 'LOCKED'}`);
+                    break;
+                case 'test confetti':
+                    import('canvas-confetti').then((confetti) => {
+                        confetti.default({
+                            particleCount: 100,
+                            spread: 70,
+                            origin: { y: 0.6 },
+                            colors: ['#34d399', '#60a5fa', '#f87171']
+                        });
+                    });
+                    addLog('DISPENSING CONFETTI...');
+                    break;
+                default:
+                    addLog(`UNKNOWN COMMAND: "${cmd}". TYPE "help".`);
+            }
+        }
     };
 
+    // Auto-focus input when opened
+    useEffect(() => {
+        if (isOpen && inputRef.current) {
+            setTimeout(() => inputRef.current.focus(), 100);
+        }
+    }, [isOpen]);
+
     return (
-        <div className="fixed bottom-6 right-6 z-[100]" ref={menuRef}>
-            <AnimatePresence>
-                {isOpen && (
+        <AnimatePresence>
+            {isOpen && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none font-mono">
+                    {/* Backdrop */}
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 bg-black/80 backdrop-blur-sm pointer-events-auto"
+                        onClick={() => setIsOpen(false)}
+                    />
+
+                    {/* Retro Terminal Window */}
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.8, y: 20 }}
-                        className="absolute bottom-16 right-0 w-64 bg-[#0B0F1C] border border-white/10 rounded-2xl shadow-2xl backdrop-blur-xl overflow-hidden"
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        className="relative w-[700px] h-[500px] bg-black border-2 border-emerald-500/50 rounded-lg shadow-[0_0_50px_rgba(16,185,129,0.2)] overflow-hidden pointer-events-auto flex flex-col"
+                        onClick={() => inputRef.current?.focus()}
                     >
-                        <div className="p-4 border-b border-white/5 bg-white/5">
-                            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                                <Bug size={16} className="text-emerald-400" />
-                                Menú de Pruebas
-                            </h3>
-                        </div>
+                        {/* CRT Scanline Overlay */}
+                        <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-20 bg-[length:100%_2px,3px_100%] pointer-events-none opacity-20" />
 
-                        <div className="p-2 space-y-1">
-                            <button
-                                onClick={handleResetLevel}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors text-left"
-                            >
-                                <RefreshCw size={16} className="text-blue-400" />
-                                Reiniciar Niveles
-                            </button>
+                        {/* Screen Flicker / Glow */}
+                        <div className="absolute inset-0 shadow-[inset_0_0_100px_rgba(0,0,0,0.9)] z-10 pointer-events-none" />
 
-                            <button
-                                onClick={handleRestartCourse}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors text-left"
-                            >
-                                <RotateCcw size={16} className="text-red-400" />
-                                Reiniciar Curso
-                            </button>
-
-
-                            <button
-                                onClick={handleCompleteCourse}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors text-left"
-                            >
-                                <CheckCheck size={16} className="text-emerald-400" />
-                                Completar Curso
-                            </button>
-
-                            <div className="h-px bg-white/5 my-1" />
-
-                            <div className="px-3 py-1 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                Desbloqueos Rápidos
+                        {/* Content Area */}
+                        <div className="relative z-0 p-6 flex flex-col h-full text-emerald-500 drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]">
+                            {/* Header */}
+                            <div className="flex justify-between border-b-2 border-emerald-500/50 pb-2 mb-4 uppercase tracking-widest text-xs">
+                                <span>ROBCO INDUSTRIES (TM) TERMILINK PROTOCOL</span>
+                                <span>{(currentLevel || 'UNKNOWN').toUpperCase()} ACCESS</span>
                             </div>
 
-                            <button
-                                onClick={() => setProUnlocked(!proUnlocked)}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors text-left"
-                            >
-                                {proUnlocked ? (
-                                    <CheckCheck size={16} className="text-blue-400" />
-                                ) : (
-                                    <X size={16} className="text-slate-500" />
-                                )}
-                                Nivel Pro {proUnlocked ? '(ON)' : '(OFF)'}
-                            </button>
-
-                            <button
-                                onClick={() => setExpertUnlocked(!expertUnlocked)}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors text-left"
-                            >
-                                {expertUnlocked ? (
-                                    <CheckCheck size={16} className="text-red-400" />
-                                ) : (
-                                    <X size={16} className="text-slate-500" />
-                                )}
-                                Nivel Expert {expertUnlocked ? '(ON)' : '(OFF)'}
-                            </button>
-
-                            <div className="h-px bg-white/5 my-1" />
-
-                            <div className="px-3 py-1 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                Test Animaciones
+                            {/* Logs Output */}
+                            <div className="flex-1 overflow-y-auto space-y-1 mb-4 font-bold text-sm scrollbar-hide">
+                                {logs.map((log, i) => (
+                                    <div key={i} className="opacity-90">{log}</div>
+                                ))}
                             </div>
 
-                            <button
-                                onClick={() => {
-                                    import('canvas-confetti').then((confetti) => {
-                                        confetti.default({
-                                            particleCount: 100,
-                                            spread: 70,
-                                            origin: { y: 0.6 },
-                                            colors: ['#34d399', '#60a5fa', '#f87171']
-                                        });
-                                    });
-                                }}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors text-left"
-                            >
-                                <span className="text-lg">🎉</span>
-                                Confetti
-                            </button>
-
-                            <button
-                                onClick={() => {
-                                    // Trigger a rocket launch event that CourseLayout listens to?
-                                    // Or just simulate the unlock callback if possible.
-                                    // simpler: just re-trigger the state unlock for pro
-                                    if (window.confirm('Esto simulará el desbloqueo del nivel PRO (Rocket). ¿Continuar?')) {
-                                        setProUnlocked(false);
-                                        setTimeout(() => {
-                                            const rocketBtn = document.querySelector('button'); // A bit risky selectors
-                                            // Better: Dispatch a custom event or just let the user use the Hold button after reset
-                                            // For now, let's just do confetti as the main visual test
-                                            import('canvas-confetti').then((confetti) => {
-                                                const end = Date.now() + 1000;
-                                                (function frame() {
-                                                    confetti.default({
-                                                        particleCount: 5,
-                                                        angle: 60,
-                                                        spread: 55,
-                                                        origin: { x: 0 },
-                                                        colors: ['#60a5fa']
-                                                    });
-                                                    confetti.default({
-                                                        particleCount: 5,
-                                                        angle: 120,
-                                                        spread: 55,
-                                                        origin: { x: 1 },
-                                                        colors: ['#60a5fa']
-                                                    });
-                                                    if (Date.now() < end) {
-                                                        requestAnimationFrame(frame);
-                                                    }
-                                                }());
-                                            });
-                                        }, 100);
-                                    }
-                                }}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors text-left"
-                            >
-                                <span className="text-lg">🚀</span>
-                                Efecto Cohete (Pro)
-                            </button>
-
-                            <div className="h-px bg-white/5 my-1" />
-
-                            <button
-                                onClick={handleDashboard}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors text-left"
-                            >
-                                <LayoutDashboard size={16} className="text-amber-400" />
-                                Ir al Dashboard
-                            </button>
+                            {/* Input Area */}
+                            <div className="flex items-center gap-2 border-t-2 border-emerald-500/30 pt-4 text-emerald-400">
+                                <span className="animate-pulse">{'>'}</span>
+                                <input
+                                    ref={inputRef}
+                                    type="text"
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
+                                    onKeyDown={handleCommand}
+                                    className="bg-transparent border-none outline-none flex-1 font-bold uppercase placeholder-emerald-800"
+                                    placeholder="ENTER COMMAND..."
+                                    autoComplete="off"
+                                    autoFocus
+                                />
+                                <div className="w-3 h-5 bg-emerald-500 animate-pulse" />
+                            </div>
                         </div>
                     </motion.div>
-                )}
-            </AnimatePresence>
-
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className={`p-3.5 rounded-full shadow-lg border transition-all duration-300 ${isOpen
-                    ? 'bg-red-500/20 border-red-500/50 text-red-400 rotate-90'
-                    : 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 hover:scale-110'
-                    }`}
-            >
-                {isOpen ? <X size={24} /> : <MessageCircle size={24} />}
-            </button>
-        </div >
+                </div>
+            )}
+        </AnimatePresence>
     );
 }
