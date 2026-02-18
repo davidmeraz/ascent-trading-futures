@@ -234,17 +234,15 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 h-full">
             {/* Dashboard Content */}
             <>
-                <h1 className="text-4xl font-bold text-white mb-2">Welcome back, Trader</h1>
-                <p className="text-slate-400 mb-10 text-lg">Your journey to mastery continues.</p>
 
                 {/* 3 Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                     {/* Card 1: Level */}
-                    <div className={`p-6 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/5 relative overflow-hidden group ${theme.borderHover} transition-colors`}>
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <div className={`p-6 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/5 relative overflow-hidden group ${theme.borderHover} transition-all duration-500 hover:shadow-lg hover:shadow-black/20 hover:-translate-y-1`}>
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity duration-500">
                             <TrendingUp size={64} />
                         </div>
-                        <h3 className="text-slate-400 text-sm font-medium uppercase tracking-wider mb-2">Current Level</h3>
+                        <h3 className="text-slate-400 text-sm font-medium uppercase tracking-wider mb-2 transition-colors group-hover:text-slate-300">Current Level</h3>
                         <div className="text-3xl font-bold text-white mb-1">{currentLevel === 'pro' ? 'Pro Trader' : currentLevel === 'expert' ? 'Expert Trader' : currentLevel === 'none' ? 'Unranked' : 'Noob Trader'}</div>
                         <div className={`${theme.primary} text-xs font-semibold`}>
                             {currentLevel === 'pro' ? 'Phase 2 Unlocked!' : currentLevel === 'expert' ? 'Mastery Achieved' : currentLevel === 'none' ? 'Get Started' : 'Phase 1 in progress'}
@@ -264,11 +262,11 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                     </div>
 
                     {/* Card 3: XP / Quizzes */}
-                    <div className={`p-6 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/5 relative overflow-hidden group ${theme.borderHover} transition-colors`}>
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <div className={`p-6 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/5 relative overflow-hidden group ${theme.borderHover} transition-all duration-500 hover:shadow-lg hover:shadow-black/20 hover:-translate-y-1`}>
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity duration-500">
                             <CheckCircle size={64} />
                         </div>
-                        <h3 className="text-slate-400 text-sm font-medium uppercase tracking-wider mb-2">Lessons Mastered</h3>
+                        <h3 className="text-slate-400 text-sm font-medium uppercase tracking-wider mb-2 transition-colors group-hover:text-slate-300">Lessons Mastered</h3>
                         <div className="text-3xl font-bold text-white mb-1">{completedLessons.length} XP</div>
                         <div className={`${theme.primary} text-xs font-semibold`}>Keep pushing!</div>
                     </div>
@@ -300,8 +298,8 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                                                     Module {key.split('-').pop()}
                                                 </span>
                                                 {modProgress.percentage === 100 && (
-                                                    <span className="text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
-                                                        <CheckCircle size={10} /> Completed
+                                                    <span className={`${theme.badgeText} ${theme.badgeBg} px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide flex items-center gap-1`}>
+                                                        <CheckCircle size={10} className={theme.badgeText} /> Completed
                                                     </span>
                                                 )}
                                             </div>
@@ -390,7 +388,7 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                                                     className={`
                                                         relative group flex flex-col p-5 rounded-xl border transition-all duration-300 h-full
                                                         ${isLessonCompleted(lesson.id)
-                                                            ? `${theme.badgeBg} border-emerald-500/20 hover:border-emerald-500/40`
+                                                            ? `${theme.badgeBg} ${theme.completedBorder} hover:border-${theme.accent}-500/40`
                                                             : isLessonLocked(lesson.id)
                                                                 ? 'bg-slate-900/20 border-white/5 opacity-50 cursor-not-allowed grayscale'
                                                                 : `bg-slate-800/40 border-white/10 ${theme.borderHover} hover:bg-slate-800 hover:-translate-y-1 hover:shadow-xl`
@@ -400,24 +398,24 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                                                 >
                                                     {/* Top status line */}
                                                     <div className="flex items-center justify-between mb-4">
-                                                        <span className={`text-xs font-bold uppercase tracking-wider opacity-60 ${isLessonCompleted(lesson.id) ? 'text-emerald-400' : 'text-slate-400'}`}>
+                                                        <span className={`text-xs font-bold uppercase tracking-wider opacity-60 ${isLessonCompleted(lesson.id) ? theme.primary : 'text-slate-400'}`}>
                                                             Lesson {index + 1}
                                                         </span>
                                                         {isLessonCompleted(lesson.id) ? (
-                                                            <div className="bg-emerald-500/20 p-1.5 rounded-full">
-                                                                <CheckCircle size={14} className="text-emerald-400" />
+                                                            <div className={`${theme.badgeBg} p-1.5 rounded-full`}>
+                                                                <CheckCircle size={14} className={theme.primary} />
                                                             </div>
                                                         ) : isLessonLocked(lesson.id) ? (
                                                             <Lock size={14} className="text-slate-600" />
                                                         ) : (
-                                                            <div className={`p-1.5 rounded-full bg-white/5 text-slate-400 group-hover:text-${theme.color}-400 transition-colors`}>
+                                                            <div className={`p-1.5 rounded-full bg-white/5 text-slate-400 group-hover:${theme.primary} transition-colors`}>
                                                                 <Circle size={14} />
                                                             </div>
                                                         )}
                                                     </div>
 
                                                     {/* Title */}
-                                                    <h3 className={`text-sm font-bold mb-2 leading-snug flex-1 ${isLessonCompleted(lesson.id) ? 'text-emerald-100' :
+                                                    <h3 className={`text-sm font-bold mb-2 leading-snug flex-1 ${isLessonCompleted(lesson.id) ? theme.light :
                                                         isLessonLocked(lesson.id) ? 'text-slate-500' : 'text-slate-200 group-hover:text-white'
                                                         }`}>
                                                         {lesson.title}
@@ -426,10 +424,10 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                                                     {/* Action Line (only active/completed) */}
                                                     {!isLessonLocked(lesson.id) && (
                                                         <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-medium">
-                                                            <span className={isLessonCompleted(lesson.id) ? 'text-emerald-400' : 'text-slate-400 group-hover:text-white transition-colors'}>
+                                                            <span className={isLessonCompleted(lesson.id) ? theme.primary : 'text-slate-400 group-hover:text-white transition-colors'}>
                                                                 {isLessonCompleted(lesson.id) ? 'Review Lesson' : 'Start Lesson'}
                                                             </span>
-                                                            <ChevronDown size={14} className={`-rotate-90 transition-transform duration-300 group-hover:translate-x-1 ${isLessonCompleted(lesson.id) ? 'text-emerald-400' : theme.primary}`} />
+                                                            <ChevronDown size={14} className={`-rotate-90 transition-transform duration-300 group-hover:translate-x-1 ${isLessonCompleted(lesson.id) ? theme.primary : theme.primary}`} />
                                                         </div>
                                                     )}
                                                 </Link>

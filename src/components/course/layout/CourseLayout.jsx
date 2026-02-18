@@ -353,6 +353,50 @@ export default function CourseLayout() {
         return !completedLessons.includes(previousLessonId);
     };
 
+    // Auto-refresh timer for locked quizzes
+    const [lockUpdate, setLockUpdate] = useState(0);
+
+    useEffect(() => {
+        const checkLocks = () => {
+            let nextExpiry = Infinity;
+            const now = Date.now();
+
+            // Scan for any active quiz locks
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('quiz_lockout_')) {
+                    const expiry = parseInt(localStorage.getItem(key) || '0', 10);
+                    if (expiry > now) {
+                        if (expiry < nextExpiry) nextExpiry = expiry;
+                    }
+                }
+            }
+
+            // If we found a future expiry, set a timer to refresh when it happens
+            if (nextExpiry !== Infinity) {
+                const delay = Math.max(0, nextExpiry - now) + 500; // Small buffer
+                const timer = setTimeout(() => {
+                    setLockUpdate(prev => prev + 1);
+                }, delay);
+                return () => clearTimeout(timer);
+            }
+        };
+
+        const onCustomUpdate = () => {
+            setLockUpdate(prev => prev + 1);
+            checkLocks();
+        };
+
+        window.addEventListener('quizLockUpdate', onCustomUpdate);
+
+        const cleanup = checkLocks();
+
+        return () => {
+            if (cleanup) cleanup();
+            window.removeEventListener('quizLockUpdate', onCustomUpdate);
+        };
+    }, [lockUpdate, location.pathname, currentLevel]);
+
     const isLessonCompleted = (id) => completedLessons.includes(id);
 
     // Calculate progress
@@ -684,6 +728,36 @@ export default function CourseLayout() {
                                                             );
                                                         }
 
+                                                        // Check for quiz timer lockout
+                                                        const isTimerLocked = (() => {
+                                                            try {
+                                                                const lockTime = localStorage.getItem(`quiz_lockout_${lesson.id}`);
+                                                                return lockTime && parseInt(lockTime, 10) > Date.now();
+                                                            } catch (e) { return false; }
+                                                        })();
+
+                                                        if (isTimerLocked) {
+                                                            return (
+                                                                <Link
+                                                                    key={lesson.id}
+                                                                    to={`/learn/${lesson.id}`}
+                                                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] transition-all duration-200 group
+                                                                    ${isActive
+                                                                            ? 'bg-amber-500/10 text-amber-400 font-medium border border-amber-500/20'
+                                                                            : 'text-amber-400 hover:bg-white/5 hover:text-amber-300'
+                                                                        }`}
+                                                                >
+                                                                    <div className="relative flex items-center justify-center">
+                                                                        <Circle size={17} className="text-amber-500/20 shrink-0" />
+                                                                        <div className="absolute inset-0 flex items-center justify-center">
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                                        </div>
+                                                                    </div>
+                                                                    {lesson.title}
+                                                                </Link>
+                                                            );
+                                                        }
+
                                                         return (
                                                             <Link
                                                                 key={lesson.id}
@@ -773,7 +847,7 @@ export default function CourseLayout() {
                     </div>
                 </header>
 
-                <div className={`flex-1 max-w-6xl mx-auto w-full px-8 md:px-16 ${lessonId ? 'pt-10 pb-14 md:py-14' : 'py-14'}`}>
+                <div className={`flex-1 max-w-6xl mx-auto w-full px-8 md:px-16 ${lessonId ? 'pt-10 pb-14 md:py-14' : 'pt-6 pb-14'}`}>
                     {lessonId ? (
                         <Outlet context={{ currentLevel: displayLevel }} />
                     ) : (

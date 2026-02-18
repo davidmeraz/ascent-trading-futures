@@ -40,6 +40,26 @@ export default function QuizComponent({ lessonId, questions, onPass, onFail, the
         setPassed(false);
     }, [lessonId, lockoutKey]);
 
+    // Listen for debug overrides
+    useEffect(() => {
+        const handleOverride = () => {
+            const storedLockout = localStorage.getItem(lockoutKey);
+            if (storedLockout) {
+                const expiry = parseInt(storedLockout, 10);
+                if (Date.now() < expiry) {
+                    setLockoutTime(expiry);
+                } else {
+                    setLockoutTime(null);
+                }
+            } else {
+                setLockoutTime(null);
+            }
+        };
+
+        window.addEventListener('quizLockUpdate', handleOverride);
+        return () => window.removeEventListener('quizLockUpdate', handleOverride);
+    }, [lockoutKey]);
+
     // Timer logic
     useEffect(() => {
         if (!lockoutTime) return;
@@ -91,6 +111,11 @@ export default function QuizComponent({ lessonId, questions, onPass, onFail, the
             const lockUntil = Date.now() + (5 * 60 * 1000);
             setLockoutTime(lockUntil);
             localStorage.setItem(lockoutKey, lockUntil.toString());
+
+            // Notify layout to update sidebar icon immediately
+            window.dispatchEvent(new Event('quizLockUpdate'));
+            window.dispatchEvent(new Event('storage'));
+
             onFail();
         }
     };

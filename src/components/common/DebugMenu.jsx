@@ -113,13 +113,54 @@ export default function DebugMenu() {
             setInput('');
 
             switch (cmd) {
+                case 'timer reset':
+                    // Clear all quiz lockouts
+                    let clearedCount = 0;
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (key && key.startsWith('quiz_lockout_')) {
+                            localStorage.removeItem(key);
+                            clearedCount++;
+                            i--; // Adjust index after removal
+                        }
+                    }
+                    addLog(`CLEARED ${clearedCount} ACTIVE TIMER LOCKS.`);
+                    // Dispatch custom event to update UI immediately
+                    window.dispatchEvent(new Event('quizLockUpdate'));
+                    window.dispatchEvent(new Event('storage'));
+
+                    // Close terminal on success
+                    setTimeout(() => setIsOpen(false), 500);
+                    break;
+
+                case cmd.match(/^timer set (\d+)$/)?.[0]:
+                    const seconds = parseInt(cmd.split(' ')[2], 10);
+                    if (!isNaN(seconds)) {
+                        const allLessonIds = Object.values(COURSE_CONTENT)
+                            .flatMap(module => module.lessons.map(l => l.id));
+
+                        const lockUntil = Date.now() + (seconds * 1000);
+                        allLessonIds.forEach(id => {
+                            localStorage.setItem(`quiz_lockout_${id}`, lockUntil.toString());
+                        });
+                        addLog(`ALL QUIZZES LOCKED FOR ${seconds} SECONDS.`);
+                        window.dispatchEvent(new Event('quizLockUpdate'));
+                        window.dispatchEvent(new Event('storage'));
+
+                        // Close terminal on success
+                        setTimeout(() => setIsOpen(false), 500);
+                    } else {
+                        addLog('INVALID TIME FORMAT.');
+                    }
+                    break;
+
                 case 'help':
                     addLog('AVAILABLE COMMANDS:');
                     addLog('  help       - Show list of commands');
                     addLog('  clear      - Clear terminal logs');
                     addLog('  reset level- Reset current level progress');
-                    addLog('  reset all  - Hard reset all progress');
-                    addLog('  complete   - Complete all lessons');
+                    addLog('  timer reset- Remove all quiz timeout locks');
+                    addLog('  timer set N- Lock all quizzes for N seconds');
                     addLog('  toggle pro - Toggle Pro Level');
                     addLog('  toggle exp - Toggle Expert Level');
                     addLog('  exit       - Close terminal');
