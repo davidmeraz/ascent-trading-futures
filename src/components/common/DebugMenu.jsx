@@ -25,6 +25,14 @@ export default function DebugMenu() {
     const [proUnlocked, setProUnlocked] = useStorage('pro_level_unlocked', false);
     const [expertUnlocked, setExpertUnlocked] = useStorage('expert_level_unlocked', false);
 
+    // Terminal Themes
+    const terminalThemes = {
+        noob: { text: 'text-emerald-500', textSoft: 'text-emerald-400', border: 'border-emerald-500', bg: 'bg-emerald-500', shadow: 'shadow-[0_0_50px_rgba(16,185,129,0.2)]', dropShadow: 'drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]', placeholder: 'placeholder-emerald-800/50' },
+        pro: { text: 'text-blue-500', textSoft: 'text-blue-400', border: 'border-blue-500', bg: 'bg-blue-500', shadow: 'shadow-[0_0_50px_rgba(59,130,246,0.2)]', dropShadow: 'drop-shadow-[0_0_5px_rgba(59,130,246,0.8)]', placeholder: 'placeholder-blue-800/50' },
+        expert: { text: 'text-amber-500', textSoft: 'text-amber-400', border: 'border-amber-500', bg: 'bg-amber-500', shadow: 'shadow-[0_0_50px_rgba(245,158,11,0.2)]', dropShadow: 'drop-shadow-[0_0_5px_rgba(245,158,11,0.8)]', placeholder: 'placeholder-amber-800/50' },
+    };
+    const activeTheme = terminalThemes[currentLevel] || terminalThemes.noob;
+
     // Terminal State
     const [input, setInput] = useState('');
     const [logs, setLogs] = useState(['> ROBCO INDUSTRIES (TM) TERMILINK PROTOCOL', '> ENTER PASSWORD NOW', '> **********', '> ACCESS GRANTED', '> WELCOME TO DEBUG CONSOLE']);
@@ -237,7 +245,7 @@ export default function DebugMenu() {
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="relative w-[700px] h-[500px] bg-black border-2 border-emerald-500/50 rounded-lg shadow-[0_0_50px_rgba(16,185,129,0.2)] overflow-hidden pointer-events-auto flex flex-col"
+                        className={`relative w-[700px] h-[500px] bg-black border-2 ${activeTheme.border}/50 rounded-lg ${activeTheme.shadow} overflow-hidden pointer-events-auto flex flex-col`}
                         onClick={() => inputRef.current?.focus()}
                     >
                         {/* CRT Scanline Overlay */}
@@ -247,9 +255,9 @@ export default function DebugMenu() {
                         <div className="absolute inset-0 shadow-[inset_0_0_100px_rgba(0,0,0,0.9)] z-10 pointer-events-none" />
 
                         {/* Content Area */}
-                        <div className="relative z-0 p-6 flex flex-col h-full text-emerald-500 drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]">
+                        <div className={`relative z-0 p-6 flex flex-col h-full ${activeTheme.text} ${activeTheme.dropShadow}`}>
                             {/* Header */}
-                            <div className="flex justify-between border-b-2 border-emerald-500/50 pb-2 mb-4 uppercase tracking-widest text-xs">
+                            <div className={`flex justify-between border-b-2 ${activeTheme.border}/50 pb-2 mb-4 uppercase tracking-widest text-xs`}>
                                 <span>ROBCO INDUSTRIES (TM) TERMILINK PROTOCOL</span>
                                 <span>{(currentLevel || 'UNKNOWN').toUpperCase()} ACCESS</span>
                             </div>
@@ -262,7 +270,7 @@ export default function DebugMenu() {
                             </div>
 
                             {/* Input Area */}
-                            <div className="flex items-center gap-2 border-t-2 border-emerald-500/30 pt-4 text-emerald-400">
+                            <div className={`flex items-center gap-2 border-t-2 ${activeTheme.border}/30 pt-4 ${activeTheme.textSoft}`}>
                                 <span className="animate-pulse">{'>'}</span>
                                 <input
                                     ref={inputRef}
@@ -270,12 +278,12 @@ export default function DebugMenu() {
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
                                     onKeyDown={handleCommand}
-                                    className="bg-transparent border-none outline-none flex-1 font-bold uppercase placeholder-emerald-800"
+                                    className={`bg-transparent border-none outline-none flex-1 font-bold uppercase ${activeTheme.placeholder}`}
                                     placeholder="ENTER COMMAND..."
                                     autoComplete="off"
                                     autoFocus
                                 />
-                                <div className="w-3 h-5 bg-emerald-500 animate-pulse" />
+                                <div className={`w-3 h-5 ${activeTheme.bg} animate-pulse`} />
                             </div>
                         </div>
                     </motion.div>

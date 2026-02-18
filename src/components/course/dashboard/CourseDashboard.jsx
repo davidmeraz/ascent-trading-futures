@@ -17,7 +17,7 @@ function DashboardProgressCircle({ percentage, size = 48, strokeWidth = 4, color
         ? 'text-emerald-400'
         : percentage >= 50
             ? 'text-blue-400'
-            : 'text-amber-400');
+            : `${isWaiting ? 'text-red-400' : theme.primary}`);
 
     return (
         <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
@@ -204,38 +204,38 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                 shimmer: 'from-blue-500/5',
             },
             expert: {
-                primary: 'text-red-400',
-                borderHover: 'hover:border-red-500/30',
-                progressBar: 'bg-red-500',
-                progressBarBg: 'bg-red-500/20',
-                icon: 'text-red-500',
-                badgeBg: 'bg-red-500/10',
-                badgeText: 'text-red-500',
+                primary: 'text-amber-400',
+                borderHover: 'hover:border-amber-500/30',
+                progressBar: 'bg-amber-500',
+                progressBarBg: 'bg-amber-500/20',
+                icon: 'text-amber-500',
+                badgeBg: 'bg-amber-500/10',
+                badgeText: 'text-amber-500',
                 lockedIcon: 'text-slate-500',
                 lockedText: 'text-slate-500',
-                shimmer: 'from-red-500/5',
+                shimmer: 'from-amber-500/5',
             },
             waiting: {
-                primary: 'text-amber-400',
-                borderHover: 'border-amber-500/50 hover:border-amber-400',
-                bg: 'bg-amber-900/10',
-                icon: 'text-amber-400',
-                badgeBg: 'bg-amber-500/10',
-                badgeText: 'text-amber-400',
-                shimmer: 'from-amber-500/5',
+                primary: 'text-slate-400',
+                borderHover: 'hover:border-slate-500/30',
+                bg: 'bg-slate-500/10',
+                icon: 'text-slate-500',
+                badgeBg: 'bg-slate-500/10',
+                badgeText: 'text-slate-500',
+                shimmer: 'from-slate-500/5',
             }
         };
         return colors[currentLevel] || colors.none || colors.noob;
     })();
 
     const waitingTheme = {
-        primary: 'text-amber-400',
-        borderHover: 'border-amber-500/40 hover:border-amber-400/60',
-        bg: 'bg-amber-500/5',
-        icon: 'text-amber-400',
-        badgeBg: 'bg-amber-500/10',
-        badgeText: 'text-amber-400',
-        shimmer: 'from-amber-500/5',
+        primary: 'text-red-400',
+        borderHover: 'border-red-500/40 hover:border-red-400/60',
+        bg: 'bg-red-500/5',
+        icon: 'text-red-400',
+        badgeBg: 'bg-red-500/10',
+        badgeText: 'text-red-400',
+        shimmer: 'from-red-500/5',
     };
 
     // Force update for timer checks
@@ -316,7 +316,7 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                         const activeTheme = isWaiting ? waitingTheme : theme;
 
                         return (
-                            <div key={key} className={`flex flex-col ${isWaiting ? 'bg-amber-900/10 border-amber-500/30' : 'bg-slate-900/40 border-white/5'} border rounded-2xl overflow-hidden transition-all duration-300 ${activeTheme.borderHover} group`}>
+                            <div key={key} className={`flex flex-col ${isWaiting ? 'bg-red-900/10 border-red-500/30' : 'bg-slate-900/40 border-white/5'} border rounded-2xl overflow-hidden transition-all duration-300 ${activeTheme.borderHover} group`}>
 
                                 {/* Module Card Header (Always Visible) - Now opens modal */}
                                 <div
@@ -337,8 +337,8 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                                                         <CheckCircle size={10} className={theme.badgeText} /> Completed
                                                     </span>
                                                 ) : isWaiting && (
-                                                    <span className="text-amber-400 bg-amber-500/10 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide flex items-center gap-1 animate-pulse">
-                                                        <Sparkles size={10} className="text-amber-400" /> Cooldown Active
+                                                    <span className="text-red-400 bg-red-500/10 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide flex items-center gap-1 animate-pulse">
+                                                        <Sparkles size={10} className="text-red-400" /> Cooldown Active
                                                     </span>
                                                 )}
                                             </div>
@@ -468,7 +468,7 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                                                                 </div>
                                                             ) : isWaiting ? (
                                                                 <div className={`${waitingTheme.badgeBg} px-2 py-1 rounded-md flex items-center gap-2 animate-pulse`}>
-                                                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping" />
                                                                     <span className={`${waitingTheme.badgeText} text-xs font-mono font-bold`}>{remainingLabel}</span>
                                                                 </div>
                                                             ) : isLessonLocked(lesson.id) ? (
@@ -498,7 +498,7 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                                                                     <ChevronDown size={14} className={`-rotate-90 transition-transform duration-300 group-hover:translate-x-1 ${isLessonCompleted(lesson.id) ? theme.primary : theme.primary}`} />
                                                                 )}
                                                                 {isWaiting && (
-                                                                    <div className="w-4 h-4 rounded-full border-2 border-amber-500/30 border-t-amber-500 animate-spin" />
+                                                                    <div className="w-4 h-4 rounded-full border-2 border-red-500/30 border-t-red-500 animate-spin" />
                                                                 )}
                                                             </div>
                                                         )}

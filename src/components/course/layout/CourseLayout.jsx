@@ -87,24 +87,24 @@ const LEVELS = {
         name: 'The Expert',
         label: 'Expert',
         Icon: Crown,
-        color: 'red',
-        gradient: 'from-red-500 to-red-600',
-        shadow: 'shadow-red-500/25',
-        borderActive: 'border-red-400/20',
-        textColor: 'text-red-400',
-        headerGradient: 'from-red-400 to-red-500',
+        color: 'amber',
+        gradient: 'from-amber-500 to-amber-600',
+        shadow: 'shadow-amber-500/25',
+        borderActive: 'border-amber-400/20',
+        textColor: 'text-amber-400',
+        headerGradient: 'from-amber-400 to-amber-500',
         // Sidebar accent colors
-        activeBg: 'bg-red-500/5',
-        activeBorder: 'border-red-500/15',
-        activeText: 'text-red-400',
-        activeItemBg: 'bg-red-500/10',
-        completedIcon: 'text-red-500',
-        progressCircle: 'text-red-500',
-        navbarAccent: 'via-red-500/30',
-        navbarActiveBg: 'bg-red-500/15',
-        navbarActiveText: 'text-red-400',
-        navbarActiveBorder: 'border-red-500/20',
-        navbarActiveShadow: 'shadow-red-500/10',
+        activeBg: 'bg-amber-500/5',
+        activeBorder: 'border-amber-500/15',
+        activeText: 'text-amber-400',
+        activeItemBg: 'bg-amber-500/10',
+        completedIcon: 'text-amber-500',
+        progressCircle: 'text-amber-500',
+        navbarAccent: 'via-amber-500/30',
+        navbarActiveBg: 'bg-amber-500/15',
+        navbarActiveText: 'text-amber-400',
+        navbarActiveBorder: 'border-amber-500/20',
+        navbarActiveShadow: 'shadow-amber-500/10',
     },
 };
 
@@ -122,7 +122,7 @@ function ModuleProgressCircle({ percentage, size = 32, strokeWidth = 3, fontSize
         ? 'text-emerald-400'
         : percentage >= 50
             ? 'text-blue-400'
-            : 'text-amber-400';
+            : `${percentage >= 25 ? 'opacity-80' : 'opacity-40'} ${percentage === 100 ? 'text-emerald-400' : 'text-current'}`;
 
     return (
         <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
@@ -722,7 +722,7 @@ export default function CourseLayout() {
                                                         if (locked) {
                                                             return (
                                                                 <div key={lesson.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] text-slate-500 cursor-not-allowed opacity-75">
-                                                                    <Lock size={17} className="text-red-500 shrink-0" />
+                                                                    <Lock size={17} className="text-slate-500 shrink-0" />
                                                                     {lesson.title}
                                                                 </div>
                                                             );
@@ -743,14 +743,14 @@ export default function CourseLayout() {
                                                                     to={`/learn/${lesson.id}`}
                                                                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] transition-all duration-200 group
                                                                     ${isActive
-                                                                            ? 'bg-amber-500/10 text-amber-400 font-medium border border-amber-500/20'
-                                                                            : 'text-amber-400 hover:bg-white/5 hover:text-amber-300'
+                                                                            ? 'bg-red-500/10 text-red-400 font-medium border border-red-500/20'
+                                                                            : 'text-red-400 hover:bg-white/5 hover:text-red-300'
                                                                         }`}
                                                                 >
                                                                     <div className="relative flex items-center justify-center">
-                                                                        <Circle size={17} className="text-amber-500/20 shrink-0" />
+                                                                        <Circle size={17} className="text-red-500/20 shrink-0" />
                                                                         <div className="absolute inset-0 flex items-center justify-center">
-                                                                            <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
                                                                         </div>
                                                                     </div>
                                                                     {lesson.title}
@@ -832,7 +832,94 @@ export default function CourseLayout() {
                     </div>
 
 
+                    {/* Level Switcher - Centered Absolutely in Header */}
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50">
+                        <div className="flex flex-col items-center pointer-events-auto">
+                            {/* Active level icon */}
+                            <AnimatePresence>
+                                {!lessonId && (
+                                    <motion.button
+                                        ref={levelSwitcherRef}
+                                        key="level-switcher-btn"
+                                        disabled={isZooming || !hasUnlockableLevels}
+                                        initial={{ opacity: 0, scale: 0, rotate: -180 }}
+                                        animate={{
+                                            opacity: 1,
+                                            scale: isZooming ? [1, 1.3, 1] : 1,
+                                            rotate: 0
+                                        }}
+                                        transition={{
+                                            type: 'spring',
+                                            stiffness: 260,
+                                            damping: 20,
+                                            scale: { duration: 0.5, ease: "easeInOut" }
+                                        }}
+                                        onClick={() => !isZooming && hasUnlockableLevels && setLevelSwitcherOpen(prev => !prev)}
+                                        whileHover={(!isZooming && hasUnlockableLevels) ? { scale: 1.1 } : {}}
+                                        whileTap={(!isZooming && hasUnlockableLevels) ? { scale: 0.95 } : {}}
+                                        className={`w-11 h-11 rounded-xl bg-gradient-to-br ${buttonLevel.gradient} flex items-center justify-center shadow-lg ${buttonLevel.shadow} border ${buttonLevel.borderActive} ${(isZooming || !hasUnlockableLevels) ? 'cursor-default' : 'cursor-pointer'} transition-shadow`}
+                                    >
+                                        <buttonLevel.Icon size={20} className="text-white" />
+                                    </motion.button>
+                                )}
+                            </AnimatePresence>
 
+                            {/* Dropdown */}
+                            <AnimatePresence>
+                                {levelSwitcherOpen && hasUnlockableLevels && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -8, scale: 0.9 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: -8, scale: 0.9 }}
+                                        transition={{ duration: 0.2, ease: 'easeOut' }}
+                                        className="absolute top-full mt-3 flex items-center gap-5 px-3 py-2.5 rounded-2xl bg-[#0B0F1C]/95 backdrop-blur-md border border-white/10 shadow-2xl shadow-black/40"
+                                    >
+                                        {otherLevels.map((level) => {
+                                            const isUnlocked = unlockedLevels[level.key];
+                                            if (!isUnlocked) return null;
+                                            return (
+                                                <motion.button
+                                                    key={level.key}
+                                                    whileHover={isUnlocked ? { scale: 1.1 } : {}}
+                                                    whileTap={isUnlocked ? { scale: 0.95 } : {}}
+                                                    onClick={() => {
+                                                        if (isUnlocked) {
+                                                            setLevelSwitcherOpen(false);
+                                                            if (level.key !== currentLevel) {
+                                                                setButtonOverrideLevel(level.key);
+                                                                setIsZooming(true);
+                                                                setTimeout(() => {
+                                                                    setIsZooming(false);
+                                                                    triggerExplosion(level.key);
+                                                                    setCurrentLevel(level.key);
+                                                                    navigate('/learn');
+                                                                }, 500);
+                                                            } else {
+                                                                setCurrentLevel(level.key);
+                                                                navigate('/learn');
+                                                            }
+                                                        }
+                                                    }}
+                                                    className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all relative ${isUnlocked
+                                                        ? `bg-gradient-to-br ${level.gradient} ${level.shadow} shadow-lg ${level.borderActive} cursor-pointer`
+                                                        : 'bg-slate-800/60 border-white/5 opacity-40 cursor-not-allowed'
+                                                        }`}
+                                                    title={isUnlocked ? level.label : `${level.label} (Locked)`}
+                                                >
+                                                    <level.Icon size={18} className={isUnlocked ? 'text-white' : 'text-slate-500'} />
+                                                    {!isUnlocked && (
+                                                        <div className="absolute inset-0 flex items-center justify-center">
+                                                            <Lock size={10} className="text-slate-400" />
+                                                        </div>
+                                                    )}
+                                                </motion.button>
+                                            );
+                                        })}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    </div>
                     {/* User Profile - Top Right - Hidden on mobile when in lesson OR when sidebar is open */}
                     <div className={`items-center gap-5 ${isSidebarOpen ? 'hidden sm:flex' : (lessonId ? 'hidden sm:flex' : 'flex')} ${isDashboard ? '-mt-1 md:mt-0' : ''}`}>
                         <div className="text-right hidden sm:block">
@@ -870,106 +957,7 @@ export default function CourseLayout() {
             {/* ══════════════════════════════════════════════════════════
                 FLYING ROCKET OVERLAY — animated from dashboard to header
                 ══════════════════════════════════════════════════════════ */}
-            {/* ═══ Global Level Switcher (Fixed on top of everything) ═══ */}
-            <div className={`fixed top-0 z-[50] flex justify-center md:pt-[18px] pointer-events-none transition-all duration-300 ${isDashboard ? 'pt-[18px]' : 'pt-[22px]'} ${isSidebarOpen ? 'md:left-[352px] md:right-0 left-0 right-0 opacity-0 md:opacity-100' : 'left-0 right-0'}`}>
-                <div className="flex flex-col items-center pointer-events-auto">
-                    {/* Active level icon — Always visible */}
-                    <AnimatePresence>
-                        {!lessonId && (
-                            <motion.button
-                                ref={levelSwitcherRef}
-                                key="level-switcher-btn"
-                                disabled={isZooming || !hasUnlockableLevels}
-                                initial={{ opacity: 0, scale: 0, rotate: -180 }}
-                                animate={{
-                                    opacity: 1,
-                                    scale: isZooming ? [1, 1.3, 1] : 1, // Zoom bounce effect
-                                    rotate: 0
-                                }}
-                                transition={{
-                                    type: 'spring',
-                                    stiffness: 260,
-                                    damping: 20,
-                                    scale: { duration: 0.5, ease: "easeInOut" } // Smooth zoom
-                                }}
-                                onClick={() => !isZooming && hasUnlockableLevels && setLevelSwitcherOpen(prev => !prev)}
-                                whileHover={(!isZooming && hasUnlockableLevels) ? { scale: 1.1 } : {}}
-                                whileTap={(!isZooming && hasUnlockableLevels) ? { scale: 0.95 } : {}}
-                                className={`w-11 h-11 rounded-xl bg-gradient-to-br ${buttonLevel.gradient} flex items-center justify-center shadow-lg ${buttonLevel.shadow} border ${buttonLevel.borderActive} ${(isZooming || !hasUnlockableLevels) ? 'cursor-default' : 'cursor-pointer'} transition-shadow`}
-                            >
-                                <buttonLevel.Icon size={20} className="text-white" />
-                            </motion.button>
-                        )}
-                    </AnimatePresence>
 
-                    {/* Dropdown with other levels */}
-                    <AnimatePresence>
-                        {levelSwitcherOpen && hasUnlockableLevels && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -8, scale: 0.9 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: -8, scale: 0.9 }}
-                                transition={{ duration: 0.2, ease: 'easeOut' }}
-                                className="mt-3 flex items-center gap-5 px-3 py-2.5 rounded-2xl bg-[#0B0F1C]/95 backdrop-blur-md border border-white/10 shadow-2xl shadow-black/40"
-                            >
-
-                                {otherLevels.map((level) => {
-                                    const isUnlocked = unlockedLevels[level.key];
-                                    if (!isUnlocked) return null; // Hide locked levels to avoid spoilers
-                                    return (
-                                        <motion.button
-                                            key={level.key}
-                                            whileHover={isUnlocked ? { scale: 1.1 } : {}}
-                                            whileTap={isUnlocked ? { scale: 0.95 } : {}}
-                                            onClick={() => {
-                                                if (isUnlocked) {
-                                                    // Close dropdown immediately
-                                                    setLevelSwitcherOpen(false);
-
-                                                    // If switching to a new level, run the animation sequence
-                                                    if (level.key !== currentLevel) {
-                                                        // 1. Visually update button immediately to new level
-                                                        setButtonOverrideLevel(level.key);
-
-                                                        // 2. Start Zoom Animation
-                                                        setIsZooming(true);
-
-                                                        // 3. Wait for zoom (approx 500ms) then Explode & Switch
-                                                        setTimeout(() => {
-                                                            setIsZooming(false);
-                                                            triggerExplosion(level.key);
-
-                                                            // Set actual level state
-                                                            setCurrentLevel(level.key);
-                                                            navigate('/learn');
-                                                        }, 500);
-                                                    } else {
-                                                        // Already on this level
-                                                        setCurrentLevel(level.key);
-                                                        navigate('/learn');
-                                                    }
-                                                }
-                                            }}
-                                            className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all relative ${isUnlocked
-                                                ? `bg-gradient-to-br ${level.gradient} ${level.shadow} shadow-lg ${level.borderActive} cursor-pointer`
-                                                : 'bg-slate-800/60 border-white/5 opacity-40 cursor-not-allowed'
-                                                }`}
-                                            title={isUnlocked ? level.label : `${level.label} (Locked)`}
-                                        >
-                                            <level.Icon size={18} className={isUnlocked ? 'text-white' : 'text-slate-500'} />
-                                            {!isUnlocked && (
-                                                <div className="absolute inset-0 flex items-center justify-center">
-                                                    <Lock size={10} className="text-slate-400" />
-                                                </div>
-                                            )}
-                                        </motion.button>
-                                    );
-                                })}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
-            </div>
 
             <AnimatePresence>
                 {flyingObject && (
