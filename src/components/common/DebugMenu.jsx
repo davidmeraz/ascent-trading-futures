@@ -76,14 +76,17 @@ export default function DebugMenu() {
         setCompletedLessons(newCompleted); // useStorage hook handles the event dispatch
 
         console.log(`[Debug] Reset level: ${currentLevel}`);
-        setIsOpen(false);
-        window.location.reload();
+        addLog(`LEVEL ${currentLevel.toUpperCase()} RESET COMPLETE.`);
+        setTimeout(() => setIsOpen(false), 500);
     };
 
     // 2. Reiniciar Curso (Full Reset)
     const handleRestartCourse = () => {
         if (confirm('¿Estás seguro de que quieres reiniciar todo el progreso?')) {
+            // Clear all local storage
             localStorage.clear();
+
+            // Reset individual states to defaults
             setCompletedLessons([]);
             setCurrentLevel('noob');
             setNoobUnlocked(true);
@@ -91,7 +94,8 @@ export default function DebugMenu() {
             setExpertUnlocked(false);
 
             navigate('/');
-            window.location.reload();
+            addLog('SYSTEM RESET SUCCESSFUL.');
+            setTimeout(() => setIsOpen(false), 500);
         }
     };
 
@@ -102,8 +106,8 @@ export default function DebugMenu() {
 
         setCompletedLessons(allLessonIds);
         console.log("[Debug] All lessons marked completed.");
-        setIsOpen(false);
-        window.location.reload();
+        addLog('ALL CONTENT UNLOCKED.');
+        setTimeout(() => setIsOpen(false), 500);
     };
 
     const handleCommand = (e) => {

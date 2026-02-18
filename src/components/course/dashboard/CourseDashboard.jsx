@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { TrendingUp, Book, CheckCircle, Circle, Lock, ChevronDown, Rocket, Sparkles, Sprout, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useStorage, getStorageValue } from '../../../hooks/useStorage';
 
 /**
  * Circular progress indicator for each module in the dashboard.
@@ -67,25 +68,15 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
 
     // Hold to unlock state
     const [unlockProgress, setUnlockProgress] = useState(0);
-    const [proUnlocked, setProUnlocked] = useState(() => {
-        try {
-            return JSON.parse(localStorage.getItem('pro_level_unlocked')) || false;
-        } catch { return false; }
-    });
+    const [proUnlocked, setProUnlocked] = useStorage('pro_level_unlocked', false);
     const holdInterval = useRef(null);
     const startTime = useRef(null);
 
     const rocketRef = useRef(null);
 
-
-
     // Expert Hold State
     const [expertUnlockProgress, setExpertUnlockProgress] = useState(0);
-    const [expertUnlocked, setExpertUnlocked] = useState(() => {
-        try {
-            return JSON.parse(localStorage.getItem('expert_level_unlocked')) || false;
-        } catch { return false; }
-    });
+    const [expertUnlocked, setExpertUnlocked] = useStorage('expert_level_unlocked', false);
     const expertHoldInterval = useRef(null);
     const expertStartTime = useRef(null);
     const crownRef = useRef(null);
@@ -126,7 +117,7 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
 
     const handleUnlock = () => {
         setProUnlocked(true);
-        localStorage.setItem('pro_level_unlocked', JSON.stringify(true));
+        // localStorage handled by hook
 
         // Get rocket position and pass it up for the fly animation
         if (rocketRef.current && onProUnlock) {
@@ -137,8 +128,6 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
             });
         }
     };
-
-
 
     // Expert Hold Handlers
     const startExpertHold = () => {
@@ -164,7 +153,7 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
 
     const handleExpertUnlock = () => {
         setExpertUnlocked(true);
-        localStorage.setItem('expert_level_unlocked', JSON.stringify(true));
+        // localStorage handled by hook
 
         if (crownRef.current && onExpertUnlock) {
             const rect = crownRef.current.getBoundingClientRect();
@@ -225,10 +214,54 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                 lockedIcon: 'text-slate-500',
                 lockedText: 'text-slate-500',
                 shimmer: 'from-red-500/5',
+            },
+            waiting: {
+                primary: 'text-amber-400',
+                borderHover: 'border-amber-500/50 hover:border-amber-400',
+                bg: 'bg-amber-900/10',
+                icon: 'text-amber-400',
+                badgeBg: 'bg-amber-500/10',
+                badgeText: 'text-amber-400',
+                shimmer: 'from-amber-500/5',
             }
         };
         return colors[currentLevel] || colors.none || colors.noob;
     })();
+
+    const waitingTheme = {
+        primary: 'text-amber-400',
+        borderHover: 'border-amber-500/40 hover:border-amber-400/60',
+        bg: 'bg-amber-500/5',
+        icon: 'text-amber-400',
+        badgeBg: 'bg-amber-500/10',
+        badgeText: 'text-amber-400',
+        shimmer: 'from-amber-500/5',
+    };
+
+    // Force update for timer checks
+    const [tick, setTick] = useState(0);
+
+    useEffect(() => {
+        const handleUpdate = () => setTick(t => t + 1);
+        window.addEventListener('quizLockUpdate', handleUpdate);
+        window.addEventListener('storage', handleUpdate); // Also listen to storage for cross-tab sync
+
+        // Interval to check specific timer expiration locally every second
+        const interval = setInterval(() => setTick(t => t + 1), 1000);
+
+        return () => {
+            window.removeEventListener('quizLockUpdate', handleUpdate);
+            window.removeEventListener('storage', handleUpdate);
+            clearInterval(interval);
+        };
+    }, []);
+
+    const isModuleWaiting = useCallback((module) => {
+        return module.lessons.some(lesson => {
+            const lockoutTime = getStorageValue(`quiz_lockout_${lesson.id}`, null);
+            return lockoutTime && new Date().getTime() < parseInt(lockoutTime);
+        });
+    }, [tick]); // Depend on tick to re-evaluate every second/update
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 h-full">
@@ -279,9 +312,11 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
                     {Object.entries(levelContent).map(([key, module]) => {
                         const modProgress = getModuleProgress ? getModuleProgress(key) : { completed: 0, total: module.lessons.length, percentage: 0 };
+                        const isWaiting = isModuleWaiting(module);
+                        const activeTheme = isWaiting ? waitingTheme : theme;
 
                         return (
-                            <div key={key} className={`flex flex-col bg-slate-900/40 border border-white/5 rounded-2xl overflow-hidden transition-all duration-300 ${theme.borderHover} group`}>
+                            <div key={key} className={`flex flex-col ${isWaiting ? 'bg-amber-900/10 border-amber-500/30' : 'bg-slate-900/40 border-white/5'} border rounded-2xl overflow-hidden transition-all duration-300 ${activeTheme.borderHover} group`}>
 
                                 {/* Module Card Header (Always Visible) - Now opens modal */}
                                 <div
@@ -289,17 +324,21 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                                     className="p-6 cursor-pointer relative overflow-hidden flex-1 flex flex-col justify-between"
                                 >
                                     {/* Background decorative gradient */}
-                                    <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${theme.shimmer} blur-2xl rounded-full -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+                                    <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${activeTheme.shimmer} blur-2xl rounded-full -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
 
                                     <div className="flex items-start justify-between relative z-10 mb-4">
                                         <div className="flex-1 pr-4">
                                             <div className="flex items-center gap-2 mb-3">
-                                                <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border ${theme.badgeBg} ${theme.badgeText} border-white/5`}>
+                                                <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border ${activeTheme.badgeBg} ${activeTheme.badgeText} border-white/5`}>
                                                     Module {key.split('-').pop()}
                                                 </span>
-                                                {modProgress.percentage === 100 && (
+                                                {modProgress.percentage === 100 ? (
                                                     <span className={`${theme.badgeText} ${theme.badgeBg} px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide flex items-center gap-1`}>
                                                         <CheckCircle size={10} className={theme.badgeText} /> Completed
+                                                    </span>
+                                                ) : isWaiting && (
+                                                    <span className="text-amber-400 bg-amber-500/10 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide flex items-center gap-1 animate-pulse">
+                                                        <Sparkles size={10} className="text-amber-400" /> Cooldown Active
                                                     </span>
                                                 )}
                                             </div>
@@ -315,14 +354,14 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                                                 percentage={modProgress.percentage}
                                                 size={60}
                                                 strokeWidth={5}
-                                                colorClass={theme.primary}
+                                                colorClass={activeTheme.primary}
                                             />
                                         </div>
                                     </div>
 
                                     <div className="relative z-10 mt-auto">
                                         <div className="flex items-center gap-2 text-xs text-slate-400 font-medium mb-3">
-                                            <Book size={14} className={theme.icon} />
+                                            <Book size={14} className={activeTheme.icon} />
                                             {modProgress.completed}/{modProgress.total} Lessons
                                         </div>
 
@@ -380,58 +419,92 @@ export default function CourseDashboard({ completedLessons = [], progressPercent
                                     {/* Modal Body - Grid of Lessons */}
                                     <div className="p-6 overflow-y-auto">
                                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                            {levelContent[selectedModule].lessons.map((lesson, index) => (
-                                                <Link
-                                                    key={lesson.id}
-                                                    to={`/learn/${lesson.id}`}
-                                                    onClick={() => setSelectedModule(null)} // Close on select? or keep open? Usually close.
-                                                    className={`
+                                            {levelContent[selectedModule].lessons.map((lesson, index) => {
+                                                // Check for Lockout / Waiting State
+                                                const lockoutKey = `quiz_lockout_${lesson.id}`;
+                                                const lockoutTime = getStorageValue(lockoutKey, null);
+                                                const now = new Date().getTime();
+                                                const isWaiting = lockoutTime && now < parseInt(lockoutTime);
+
+                                                let remainingLabel = "";
+                                                if (isWaiting) {
+                                                    const diff = Math.ceil((parseInt(lockoutTime) - now) / 1000);
+                                                    const m = Math.floor(diff / 60);
+                                                    const s = diff % 60;
+                                                    remainingLabel = `${m}:${s.toString().padStart(2, '0')}`;
+                                                }
+
+                                                const isLessonActive = !isLessonLocked(lesson.id) && !isWaiting;
+                                                const activeLessonTheme = isWaiting ? waitingTheme : theme;
+
+                                                return (
+                                                    <Link
+                                                        key={lesson.id}
+                                                        to={isWaiting ? '#' : `/learn/${lesson.id}`}
+                                                        onClick={(e) => {
+                                                            if (isWaiting || isLessonLocked(lesson.id)) e.preventDefault();
+                                                            else setSelectedModule(null);
+                                                        }}
+                                                        className={`
                                                         relative group flex flex-col p-5 rounded-xl border transition-all duration-300 h-full
                                                         ${isLessonCompleted(lesson.id)
-                                                            ? `${theme.badgeBg} ${theme.completedBorder} hover:border-${theme.accent}-500/40`
-                                                            : isLessonLocked(lesson.id)
-                                                                ? 'bg-slate-900/20 border-white/5 opacity-50 cursor-not-allowed grayscale'
-                                                                : `bg-slate-800/40 border-white/10 ${theme.borderHover} hover:bg-slate-800 hover:-translate-y-1 hover:shadow-xl`
-                                                        }
+                                                                ? `${theme.badgeBg} ${theme.completedBorder} hover:border-${theme.accent}-500/40`
+                                                                : isWaiting
+                                                                    ? `${waitingTheme.bg} ${waitingTheme.borderHover} cursor-not-allowed`
+                                                                    : isLessonLocked(lesson.id)
+                                                                        ? 'bg-slate-900/20 border-white/5 opacity-50 cursor-not-allowed grayscale'
+                                                                        : `bg-slate-800/40 border-white/10 ${theme.borderHover} hover:bg-slate-800 hover:-translate-y-1 hover:shadow-xl`
+                                                            }
                                                     `}
-                                                    style={isLessonLocked(lesson.id) ? { pointerEvents: 'none' } : {}}
-                                                >
-                                                    {/* Top status line */}
-                                                    <div className="flex items-center justify-between mb-4">
-                                                        <span className={`text-xs font-bold uppercase tracking-wider opacity-60 ${isLessonCompleted(lesson.id) ? theme.primary : 'text-slate-400'}`}>
-                                                            Lesson {index + 1}
-                                                        </span>
-                                                        {isLessonCompleted(lesson.id) ? (
-                                                            <div className={`${theme.badgeBg} p-1.5 rounded-full`}>
-                                                                <CheckCircle size={14} className={theme.primary} />
-                                                            </div>
-                                                        ) : isLessonLocked(lesson.id) ? (
-                                                            <Lock size={14} className="text-slate-600" />
-                                                        ) : (
-                                                            <div className={`p-1.5 rounded-full bg-white/5 text-slate-400 group-hover:${theme.primary} transition-colors`}>
-                                                                <Circle size={14} />
+                                                    >
+                                                        {/* Top status line */}
+                                                        <div className="flex items-center justify-between mb-4">
+                                                            <span className={`text-xs font-bold uppercase tracking-wider opacity-60 ${isLessonCompleted(lesson.id) ? theme.primary : isWaiting ? waitingTheme.primary : 'text-slate-400'}`}>
+                                                                Lesson {index + 1}
+                                                            </span>
+                                                            {isLessonCompleted(lesson.id) ? (
+                                                                <div className={`${theme.badgeBg} p-1.5 rounded-full`}>
+                                                                    <CheckCircle size={14} className={theme.primary} />
+                                                                </div>
+                                                            ) : isWaiting ? (
+                                                                <div className={`${waitingTheme.badgeBg} px-2 py-1 rounded-md flex items-center gap-2 animate-pulse`}>
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                                                                    <span className={`${waitingTheme.badgeText} text-xs font-mono font-bold`}>{remainingLabel}</span>
+                                                                </div>
+                                                            ) : isLessonLocked(lesson.id) ? (
+                                                                <Lock size={14} className="text-slate-600" />
+                                                            ) : (
+                                                                <div className={`p-1.5 rounded-full bg-white/5 text-slate-400 group-hover:${theme.primary} transition-colors`}>
+                                                                    <Circle size={14} />
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Title */}
+                                                        <h3 className={`text-sm font-bold mb-2 leading-snug flex-1 ${isLessonCompleted(lesson.id) ? theme.light :
+                                                            isWaiting ? waitingTheme.primary :
+                                                                isLessonLocked(lesson.id) ? 'text-slate-500' : 'text-slate-200 group-hover:text-white'
+                                                            }`}>
+                                                            {lesson.title}
+                                                        </h3>
+
+                                                        {/* Action Line (only active/completed/waiting) */}
+                                                        {!isLessonLocked(lesson.id) && (
+                                                            <div className={`mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-medium`}>
+                                                                <span className={isLessonCompleted(lesson.id) ? theme.primary : isWaiting ? waitingTheme.primary : 'text-slate-400 group-hover:text-white transition-colors'}>
+                                                                    {isLessonCompleted(lesson.id) ? 'Review Lesson' : isWaiting ? 'Cooldown Active' : 'Start Lesson'}
+                                                                </span>
+                                                                {!isWaiting && (
+                                                                    <ChevronDown size={14} className={`-rotate-90 transition-transform duration-300 group-hover:translate-x-1 ${isLessonCompleted(lesson.id) ? theme.primary : theme.primary}`} />
+                                                                )}
+                                                                {isWaiting && (
+                                                                    <div className="w-4 h-4 rounded-full border-2 border-amber-500/30 border-t-amber-500 animate-spin" />
+                                                                )}
                                                             </div>
                                                         )}
-                                                    </div>
-
-                                                    {/* Title */}
-                                                    <h3 className={`text-sm font-bold mb-2 leading-snug flex-1 ${isLessonCompleted(lesson.id) ? theme.light :
-                                                        isLessonLocked(lesson.id) ? 'text-slate-500' : 'text-slate-200 group-hover:text-white'
-                                                        }`}>
-                                                        {lesson.title}
-                                                    </h3>
-
-                                                    {/* Action Line (only active/completed) */}
-                                                    {!isLessonLocked(lesson.id) && (
-                                                        <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-medium">
-                                                            <span className={isLessonCompleted(lesson.id) ? theme.primary : 'text-slate-400 group-hover:text-white transition-colors'}>
-                                                                {isLessonCompleted(lesson.id) ? 'Review Lesson' : 'Start Lesson'}
-                                                            </span>
-                                                            <ChevronDown size={14} className={`-rotate-90 transition-transform duration-300 group-hover:translate-x-1 ${isLessonCompleted(lesson.id) ? theme.primary : theme.primary}`} />
-                                                        </div>
-                                                    )}
-                                                </Link>
-                                            ))}
+                                                    </Link>
+                                                )
+                                            })}
                                         </div>
                                     </div>
                                 </div>

@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
 import { TrendingUp, Lock, ArrowRight } from 'lucide-react';
 import { COURSE_CONTENT } from '../../../data/courseData';
-import { getStorageValue } from '../../../hooks/useStorage';
+import { useStorage, getStorageValue } from '../../../hooks/useStorage';
 import QuizComponent from './QuizComponent';
 import PrismaticImage from '../ui/PrismaticImage';
 
@@ -131,11 +131,12 @@ export default function LessonView({ currentLevel: propLevel }) {
         }
     }
 
+    const [completedLessons, setCompletedLessons] = useStorage('completed_lessons', []);
+
     // Check if already completed on mount or when lesson changes
     useEffect(() => {
-        const completedList = getStorageValue('completed_lessons', []);
-        setQuizPassed(completedList.includes(lessonId));
-    }, [lessonId]);
+        setQuizPassed(completedLessons.includes(lessonId));
+    }, [lessonId, completedLessons]);
 
     if (!activeLesson) {
         return <div className="text-center text-slate-400 mt-20">Lesson not found. Select one from the sidebar.</div>;
@@ -143,12 +144,8 @@ export default function LessonView({ currentLevel: propLevel }) {
 
     const handleQuizPass = () => {
         setQuizPassed(true);
-
-        const currentCompleted = getStorageValue('completed_lessons', []);
-        if (!currentCompleted.includes(lessonId)) {
-            const updated = [...currentCompleted, lessonId];
-            localStorage.setItem('completed_lessons', JSON.stringify(updated));
-            window.dispatchEvent(new Event('storage'));
+        if (!completedLessons.includes(lessonId)) {
+            setCompletedLessons([...completedLessons, lessonId]);
         }
     };
 
